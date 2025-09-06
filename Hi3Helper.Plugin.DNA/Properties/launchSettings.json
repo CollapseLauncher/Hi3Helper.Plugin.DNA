@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "Hi3Helper.Plugin.DNA": {
+      "commandName": "Project",
+      "nativeDebugging": true
+    }
+  }
+}

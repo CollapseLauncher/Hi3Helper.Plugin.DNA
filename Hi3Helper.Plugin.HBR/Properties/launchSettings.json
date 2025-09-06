@@ -1,8 +1,0 @@
-{
-  "profiles": {
-    "Hi3Helper.Plugin.HBR": {
-      "commandName": "Project",
-      "nativeDebugging": true
-    }
-  }
-}
