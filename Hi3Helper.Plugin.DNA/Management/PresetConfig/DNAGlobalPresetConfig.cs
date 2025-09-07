@@ -67,10 +67,10 @@ public partial class DNAGlobalPresetConfig : PluginPresetConfigBase
     public override string ZoneFullName => field ??= "Duet Night Abyss (Global)";
 
     [field: AllowNull, MaybeNull]
-    public override string ZoneLogoUrl => field ??= "https://shared.steamstatic.com/store_item_assets/steam/apps/3950020/268b044e824d3e28cdb44c2daa31d4f2314a8022/logo_2x.png";
+    public override string ZoneLogoUrl => field ??= "https://cdnstatic.herogame.com/static/duetnightabyss/4.0/imgs/icon/black-logo-en.png";
 
     [field: AllowNull, MaybeNull]
-    public override string ZonePosterUrl => field ??= "https://shared.steamstatic.com/store_item_assets/steam/apps/3950020/ee582fcde01feabf17ed4e31a54a2b9f7e7284a3/header_2x.jpg";
+    public override string ZonePosterUrl => field ??= "https://cdnstatic.herogame.com/static/duetnightabyss/4.0/imgs/worldview/pc/2.jpg";
 
     [field: AllowNull, MaybeNull]
     public override string ZoneHomePageUrl => field ??= "https://duetnightabyss.dna-panstudio.com/";
@@ -87,25 +87,25 @@ public partial class DNAGlobalPresetConfig : PluginPresetConfigBase
 
     public override ILauncherApiMedia? LauncherApiMedia
     {
-        get => field ??= new DNAGlobalLauncherApiMedia(ApiResponseUrl, CurrentTag, "", "");
+        get => field ??= null; // new DNAGlobalLauncherApiMedia(ApiResponseUrl, CurrentTag, "", "");
         set;
     }
 
     public override ILauncherApiNews? LauncherApiNews
     {
-        get => field ??= new DNAGlobalLauncherApiNews(ApiResponseUrl, CurrentTag, "", "");
+        get => field ??= null; // new DNAGlobalLauncherApiNews(ApiResponseUrl, CurrentTag, "", "");
         set;
     }
 
     public override IGameManager? GameManager
     {
-        get => field ??= new DNAGameManager(ExecutableName, ApiResponseUrl, CurrentTag, "", "", CurrentUninstKey);
+        get => field ??= null; // new DNAGameManager(ExecutableName, ApiResponseUrl, CurrentTag, "", "", CurrentUninstKey);
         set;
     }
 
     public override IGameInstaller? GameInstaller
     {
-        get => field ??= new DNAGameInstaller(GameManager);
+        get => field ??= null; // new DNAGameInstaller(GameManager);
         set;
     }
 
