@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 namespace Hi3Helper.Plugin.DNA.Management;
 
 // ReSharper disable once InconsistentNaming
-public partial class HBRGameInstaller
+public partial class DNAGameInstaller
 {
     private async ValueTask StartInstallAsyncInner(
         string gamePath,

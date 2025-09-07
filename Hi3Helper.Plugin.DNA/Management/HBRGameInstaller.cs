@@ -39,15 +39,15 @@ namespace Hi3Helper.Plugin.DNA.Management;
 
 [GeneratedComClass]
 // ReSharper disable once InconsistentNaming
-public partial class HBRGameInstaller : GameInstallerBase
+public partial class DNAGameInstaller : GameInstallerBase
 {
     private const double ExCacheDurationInMinute = 10d;
 
     private DateTimeOffset _cacheExpiredUntil = DateTimeOffset.MinValue;
 
-    private string? GameManifestUrl    => (GameManager as HBRGameManager)?.GameResourceJsonUrl;
-    private string? GameAssetBaseUrl   => (GameManager as HBRGameManager)?.GameResourceBaseUrl;
-    private string? GameAssetBasisPath => (GameManager as HBRGameManager)?.GameResourceBasisPath;
+    private string? GameManifestUrl    => (GameManager as DNAGameManager)?.GameResourceJsonUrl;
+    private string? GameAssetBaseUrl   => (GameManager as DNAGameManager)?.GameResourceBaseUrl;
+    private string? GameAssetBasisPath => (GameManager as DNAGameManager)?.GameResourceBasisPath;
 
     private HBRApiGameInstallManifest? _currentGameAssetManifest;
     
@@ -56,7 +56,7 @@ public partial class HBRGameInstaller : GameInstallerBase
 
     private readonly HttpClient _downloadHttpClient;
 
-    internal HBRGameInstaller(IGameManager? gameManager) : base(gameManager)
+    internal DNAGameInstaller(IGameManager? gameManager) : base(gameManager)
     {
         _downloadHttpClient = new PluginHttpClientBuilder()
             .AllowUntrustedCert()
@@ -234,7 +234,7 @@ public partial class HBRGameInstaller : GameInstallerBase
     {
         bool isNeedSync = IsCacheExpired();
 
-        HBRGameManager asHbrGameManager = GameManager as HBRGameManager ?? throw new InvalidOperationException("IGameManager is not HBRGameManager!");
+        DNAGameManager asHbrGameManager = GameManager as DNAGameManager ?? throw new InvalidOperationException("IGameManager is not HBRGameManager!");
         await asHbrGameManager.InitAsyncInner(isNeedSync, token);
 
         if (!isNeedSync && _currentGameAssetManifest != null)
@@ -280,7 +280,7 @@ public partial class HBRGameInstaller : GameInstallerBase
     {
         if (_currentGameAssetManifest?.GameAssets == null ||
             _currentGameAssetManifest.GameAssets.Count == 0 ||
-            GameManager is not HBRGameManager manager)
+            GameManager is not DNAGameManager manager)
         {
             return;
         }

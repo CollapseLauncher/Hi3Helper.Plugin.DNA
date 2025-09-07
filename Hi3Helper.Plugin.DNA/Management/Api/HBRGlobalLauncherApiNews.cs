@@ -21,7 +21,7 @@ using System.Text.Json;
 namespace Hi3Helper.Plugin.DNA.Management.Api;
 
 [GeneratedComClass]
-internal partial class HBRGlobalLauncherApiNews(string apiResponseBaseUrl, string gameTag, string authSalt1, string authSalt2) : LauncherApiNewsBase
+internal partial class DNAGlobalLauncherApiNews(string apiResponseBaseUrl, string gameTag, string authSalt1, string authSalt2) : LauncherApiNewsBase
 {
     [field: AllowNull, MaybeNull]
     protected override HttpClient ApiResponseHttpClient

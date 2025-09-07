@@ -28,7 +28,7 @@ using Hi3Helper.Plugin.Core.Utility.Json;
 namespace Hi3Helper.Plugin.DNA.Management;
 
 [GeneratedComClass]
-internal partial class HBRGameManager : GameManagerBase
+internal partial class DNAGameManager : GameManagerBase
 {
     [field: AllowNull, MaybeNull]
     protected override HttpClient ApiResponseHttpClient
@@ -66,7 +66,7 @@ internal partial class HBRGameManager : GameManagerBase
     internal string? GameResourceBasisPath { get; set; }
     internal bool    IsInitialized         { get; set; }
 
-    internal HBRGameManager(string gameExecutableNameByPreset,
+    internal DNAGameManager(string gameExecutableNameByPreset,
                             string apiResponseBaseUrl,
                             string gameTag,
                             string authSalt1,

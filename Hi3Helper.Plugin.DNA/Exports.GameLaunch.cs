@@ -142,7 +142,7 @@ public partial class DNAbyss
     private static bool TryGetGameExecutablePath(GameManagerExtension.RunGameFromGameManagerContext context, [NotNullWhen(true)] out string? gameExecutablePath)
     {
         gameExecutablePath = null;
-        if (context is not { GameManager: HBRGameManager hbrGameManager, PresetConfig: PluginPresetConfigBase presetConfig })
+        if (context is not { GameManager: DNAGameManager hbrGameManager, PresetConfig: PluginPresetConfigBase presetConfig })
         {
             return false;
         }
