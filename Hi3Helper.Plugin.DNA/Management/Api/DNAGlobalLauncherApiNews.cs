@@ -55,7 +55,7 @@ internal partial class DNAGlobalLauncherApiNews(string apiResponseBaseUrl) : Lau
             .ParseFrom(announcements.Content.ReadAsStream(token));
 
         // Initialize embedded Icon data
-        await DNAIconData.Initialize(token);
+        //await DNAIconData.Initialize(token);
 
         return 0;
     }
