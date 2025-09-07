@@ -16,8 +16,6 @@ using System.Threading.Tasks;
 namespace Hi3Helper.Plugin.DNA.Management.Api;
 
 #if !USELIGHTWEIGHTJSONPARSER
-[JsonSerializable(typeof(HBRApiResponse<HBRApiResponseMedia>))]
-[JsonSerializable(typeof(HBRApiResponse<HBRApiResponseSocial>))]
 [JsonSerializable(typeof(HBRApiResponse<HBRApiResponseGameConfig>))]
 [JsonSerializable(typeof(HBRApiResponse<HBRApiResponseGameConfigRef>))]
 public partial class HBRApiResponseContext : JsonSerializerContext;

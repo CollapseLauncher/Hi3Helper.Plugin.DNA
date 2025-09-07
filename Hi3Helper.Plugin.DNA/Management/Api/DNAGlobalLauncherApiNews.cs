@@ -37,22 +37,26 @@ internal partial class DNAGlobalLauncherApiNews(string apiResponseBaseUrl) : Lau
         set;
     }
 
-    protected override string ApiResponseBaseUrl { get; } = apiResponseBaseUrl;
+    protected override string ApiResponseBaseUrl { get; } = apiResponseBaseUrl + "LauncherInfo/CBT2Publish_Pub/";
 
     private DNAApiResponseNews? NewsApiResponse { get; set; }
+    private DNAApiResponseCarousel? CarouselApiResponse { get; set; }
 
     protected override async Task<int> InitAsync(CancellationToken token)
     {
         using HttpResponseMessage announcements = await ApiResponseHttpClient
-            .GetAsync(ApiResponseBaseUrl + "LauncherInfo/CBT2Publish_Pub/AnnouncementInfo_en.txt", HttpCompletionOption.ResponseHeadersRead, token);
+            .GetAsync(ApiResponseBaseUrl + "AnnouncementInfo_en.txt", HttpCompletionOption.ResponseHeadersRead, token);
         announcements.EnsureSuccessStatusCode();
 
         using HttpResponseMessage carousel = await ApiResponseHttpClient
-            .GetAsync(ApiResponseBaseUrl + "LauncherInfo/CBT2Publish_Pub/TurnsImageInfo_en.txt", HttpCompletionOption.ResponseHeadersRead, token);
+            .GetAsync(ApiResponseBaseUrl + "TurnsImageInfo_en.txt", HttpCompletionOption.ResponseHeadersRead, token);
         carousel.EnsureSuccessStatusCode();
 
         NewsApiResponse = DNAApiResponseNews
             .ParseFrom(announcements.Content.ReadAsStream(token));
+
+        CarouselApiResponse = DNAApiResponseCarousel
+            .ParseFrom(carousel.Content.ReadAsStream(token));
 
         // Initialize embedded Icon data
         //await DNAIconData.Initialize(token);
@@ -109,7 +113,48 @@ internal partial class DNAGlobalLauncherApiNews(string apiResponseBaseUrl) : Lau
     }
 
     public override void GetCarouselEntries(out nint handle, out int count, out bool isDisposable, out bool isAllocated)
-        => InitializeEmpty(out handle, out count, out isDisposable, out isAllocated);
+    {
+        try
+        {
+            if (CarouselApiResponse?.ResponseData == null || CarouselApiResponse?.ResponseData.Count == 0)
+            {
+                SharedStatic.InstanceLogger.LogTrace("[DNAGlobalLauncherApiNews::GetCarouselEntries] API provides no Carousel entries!");
+                InitializeEmpty(out handle, out count, out isDisposable, out isAllocated);
+                return;
+            }
+
+            List<DNAApiResponseCarousel.DNATurn> validEntries = [..CarouselApiResponse!.ResponseData
+                .Where(x => !string.IsNullOrEmpty(x.ImageUrl) &&
+                            !string.IsNullOrEmpty(x.ClickUrl)
+                )];
+
+            int entryCount = validEntries.Count;
+            PluginDisposableMemory<LauncherCarouselEntry> memory = PluginDisposableMemory<LauncherCarouselEntry>.Alloc(entryCount);
+
+            handle = memory.AsSafePointer();
+            count = entryCount;
+            isDisposable = true;
+
+            SharedStatic.InstanceLogger.LogTrace("[DNAGlobalLauncherApiNews::GetCarouselEntries] {EntryCount} entries are allocated at: 0x{Address:x8}", entryCount, handle);
+
+            for (int i = 0; i < entryCount; i++)
+            {
+                string imageUrl = ApiResponseBaseUrl + validEntries[i].ImageUrl!;
+                string clickUrl = validEntries[i].ClickUrl!;
+
+                ref LauncherCarouselEntry unmanagedEntry = ref memory[i];
+                unmanagedEntry.Write(null, imageUrl, clickUrl);
+            }
+
+            isAllocated = true;
+
+        }
+        catch (Exception ex)
+        {
+            SharedStatic.InstanceLogger.LogError(ex, "Failed to get news entries");
+            InitializeEmpty(out handle, out count, out isDisposable, out isAllocated);
+        }
+    }
 
     public override void GetSocialMediaEntries(out nint handle, out int count, out bool isDisposable, out bool isAllocated)
     {
