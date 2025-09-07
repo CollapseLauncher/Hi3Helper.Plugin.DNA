@@ -33,14 +33,14 @@ internal partial class DNAGameManager : GameManagerBase
     [field: AllowNull, MaybeNull]
     protected override HttpClient ApiResponseHttpClient
     {
-        get => field ??= DNAUtility.CreateApiHttpClient(CurrentGameTag, true, true, CurrentAuthSalt1, CurrentAuthSalt2);
+        get => field ??= DNAUtility.CreateApiHttpClient();
         set;
     }
         
     [field: AllowNull, MaybeNull]
     protected HttpClient ApiDownloadHttpClient
     {
-        get => field ??= DNAUtility.CreateApiHttpClient(CurrentGameTag, true, false, CurrentAuthSalt1, CurrentAuthSalt2);
+        get => field ??= DNAUtility.CreateApiHttpClient();
         set;
     }
 
@@ -49,8 +49,6 @@ internal partial class DNAGameManager : GameManagerBase
     private HBRApiResponse<HBRApiResponseGameConfig>?    ApiGameConfigResponse         { get; set; }
     private HBRApiResponse<HBRApiResponseGameConfigRef>? ApiGameDownloadRefResponse    { get; set; }
     private string                                       CurrentGameExecutableByPreset { get; }
-    private string                                       CurrentAuthSalt1              { get; }
-    private string                                       CurrentAuthSalt2              { get; }
     private string?                                      CurrentGameLauncherUninstKey  { get; }
 
 #if USELIGHTWEIGHTJSONPARSER
@@ -68,17 +66,11 @@ internal partial class DNAGameManager : GameManagerBase
 
     internal DNAGameManager(string gameExecutableNameByPreset,
                             string apiResponseBaseUrl,
-                            string gameTag,
-                            string authSalt1,
-                            string authSalt2,
                             string? launcherUninstallKey)
     {
         CurrentGameLauncherUninstKey  = launcherUninstallKey;
         CurrentGameExecutableByPreset = gameExecutableNameByPreset;
         ApiResponseBaseUrl            = apiResponseBaseUrl;
-        CurrentAuthSalt1              = authSalt1;
-        CurrentAuthSalt2              = authSalt2;
-        CurrentGameTag                = gameTag;
     }
 
     public override void Dispose()
@@ -170,6 +162,9 @@ internal partial class DNAGameManager : GameManagerBase
 
     internal async Task<int> InitAsyncInner(bool forceInit = false, CancellationToken token = default)
     {
+        IsInitialized = true;
+        return 0;
+
         if (!forceInit && IsInitialized)
         {
             return 0;

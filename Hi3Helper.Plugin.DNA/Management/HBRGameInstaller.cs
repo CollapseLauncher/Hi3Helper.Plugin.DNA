@@ -232,6 +232,8 @@ public partial class DNAGameInstaller : GameInstallerBase
 
     protected override async Task<int> InitAsync(CancellationToken token)
     {
+        return 0;
+
         bool isNeedSync = IsCacheExpired();
 
         DNAGameManager asHbrGameManager = GameManager as DNAGameManager ?? throw new InvalidOperationException("IGameManager is not HBRGameManager!");

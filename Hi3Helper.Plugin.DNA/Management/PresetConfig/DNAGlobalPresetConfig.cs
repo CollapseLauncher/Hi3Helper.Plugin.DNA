@@ -1,9 +1,7 @@
 ﻿using Hi3Helper.Plugin.Core.Management;
 using Hi3Helper.Plugin.Core.Management.Api;
 using Hi3Helper.Plugin.Core.Management.PresetConfig;
-using Hi3Helper.Plugin.Core.Utility.Windows;
 using Hi3Helper.Plugin.DNA.Management.Api;
-using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -21,7 +19,6 @@ public partial class DNAGlobalPresetConfig : PluginPresetConfigBase
 {
     private const string ApiResponseUrl = "http://pan01-cdn-aws-jp.dna-herogame.com/";
     private const string CurrentUninstKey = "";
-    private const string CurrentTag = "DNA_EN";
     private const string ExecutableName = "EM.exe";
     private const string VendorName = "HeroGames";
 
@@ -87,25 +84,25 @@ public partial class DNAGlobalPresetConfig : PluginPresetConfigBase
 
     public override ILauncherApiMedia? LauncherApiMedia
     {
-        get => field ??= null; // new DNAGlobalLauncherApiMedia(ApiResponseUrl, CurrentTag, "", "");
+        get => field ??= new DNAGlobalLauncherApiMedia(ApiResponseUrl);
         set;
     }
 
     public override ILauncherApiNews? LauncherApiNews
     {
-        get => field ??= null; // new DNAGlobalLauncherApiNews(ApiResponseUrl, CurrentTag, "", "");
+        get => field ??= new DNAGlobalLauncherApiNews(ApiResponseUrl);
         set;
     }
 
     public override IGameManager? GameManager
     {
-        get => field ??= null; // new DNAGameManager(ExecutableName, ApiResponseUrl, CurrentTag, "", "", CurrentUninstKey);
+        get => field ??= new DNAGameManager(ExecutableName, ApiResponseUrl, CurrentUninstKey);
         set;
     }
 
     public override IGameInstaller? GameInstaller
     {
-        get => field ??= null; // new DNAGameInstaller(GameManager);
+        get => field ??= new DNAGameInstaller(GameManager);
         set;
     }
 
