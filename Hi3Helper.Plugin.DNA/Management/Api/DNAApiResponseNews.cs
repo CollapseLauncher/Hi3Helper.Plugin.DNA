@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -41,7 +40,7 @@ public class DNAApiResponseNews
 
     public static DNAApiResponseNews ParseFrom(Stream stream)
     {
-        List<DNAAnnouncement> innerValue = new();
+        List<DNAAnnouncement> innerValue = [];
 
         using (var reader = new StreamReader(stream, leaveOpen: true))
         {

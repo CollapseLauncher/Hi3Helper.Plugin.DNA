@@ -19,10 +19,10 @@ namespace Hi3Helper.Plugin.DNA.Utility;
 
 internal static class DNAUtility
 {
-    internal static HttpClient CreateApiHttpClient(string? gameTag = null, bool useCompression = true)
-        => CreateApiHttpClientBuilder(gameTag, useCompression).Create();
+    internal static HttpClient CreateApiHttpClient(bool useCompression = true)
+        => CreateApiHttpClientBuilder(useCompression).Create();
 
-    internal static PluginHttpClientBuilder CreateApiHttpClientBuilder(string? gameTag = null,bool useCompression = true)
+    internal static PluginHttpClientBuilder CreateApiHttpClientBuilder(bool useCompression = true)
     {
         PluginHttpClientBuilder builder = new PluginHttpClientBuilder()
             .SetUserAgent($"EMLauncher/++UE4+Release-4.27-CL-0 Windows/10.0.26100.1.768.64bit");

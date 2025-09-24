@@ -306,7 +306,6 @@ public partial class DNAGameInstaller : GameInstallerBase
             return new HBRGameManifest
             {
                 GamePackageBasis = GameAssetBasisPath,
-                GameTag = manager.CurrentGameTag,
                 GameVersion = latestVersion,
                 ManifestEntries = _currentGameAssetManifest.GameAssets.Select(x => new HBRGameManifestEntry
                 {

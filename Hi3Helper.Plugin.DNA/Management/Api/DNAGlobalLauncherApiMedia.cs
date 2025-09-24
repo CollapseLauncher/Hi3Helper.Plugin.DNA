@@ -2,19 +2,16 @@
 using Hi3Helper.Plugin.Core.Management.Api;
 using Hi3Helper.Plugin.Core.Utility;
 using Hi3Helper.Plugin.DNA.Utility;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http;
-using System.Runtime.InteropServices;
+using System.Reflection;
 using System.Runtime.InteropServices.Marshalling;
 using System.Threading;
 using System.Threading.Tasks;
 
-#if !USELIGHTWEIGHTJSONPARSER
-using Microsoft.Extensions.Logging;
-using System.Text.Json;
-#endif
 
 // ReSharper disable InconsistentNaming
 
@@ -39,14 +36,26 @@ internal partial class DNAGlobalLauncherApiMedia(string apiResponseBaseUrl) : La
 
     protected override string ApiResponseBaseUrl { get; } = apiResponseBaseUrl;
 
-    private DNAApiResponseNews? ApiResponse { get; set; }
-
     public override unsafe void GetBackgroundEntries(out nint handle, out int count, out bool isDisposable, out bool isAllocated)
     {
-        isDisposable = false;
-        handle = nint.Zero;
-        count = 0;
-        isAllocated = false;
+        using (ThisInstanceLock.EnterScope())
+        {
+            PluginDisposableMemory<LauncherPathEntry> backgroundEntries = PluginDisposableMemory<LauncherPathEntry>.Alloc();
+
+            try
+            {
+                ref LauncherPathEntry entry = ref backgroundEntries[0];
+                entry.Write("https://cl-plugin-cdn.gablm.dev/DNA/background.jpg", []);
+
+                isAllocated = true;
+            }
+            finally
+            {
+                isDisposable = backgroundEntries.IsDisposable == 1;
+                handle = backgroundEntries.AsSafePointer();
+                count = backgroundEntries.Length;
+            }
+        }
     }
 
     public override void GetLogoOverlayEntries(out nint handle, out int count, out bool isDisposable, out bool isAllocated)
@@ -58,22 +67,19 @@ internal partial class DNAGlobalLauncherApiMedia(string apiResponseBaseUrl) : La
     }
 
     public override void GetBackgroundFlag(out LauncherBackgroundFlag result)
-        => result = LauncherBackgroundFlag.None;
+        => result = LauncherBackgroundFlag.TypeIsImage | LauncherBackgroundFlag.IsSourceFile;
 
     public override void GetLogoFlag(out LauncherBackgroundFlag result)
         => result = LauncherBackgroundFlag.None;
 
     protected override async Task<int> InitAsync(CancellationToken token)
     {
-        //using HttpResponseMessage message = await ApiResponseHttpClient.GetAsync(ApiResponseBaseUrl + "api/launcher/base/config", HttpCompletionOption.ResponseHeadersRead, token);
-        //message.EnsureSuccessStatusCode();
-
-        return 0;
+        return 69420;
     }
 
     protected override async Task DownloadAssetAsyncInner(HttpClient? client, string fileUrl, Stream outputStream, PluginDisposableMemory<byte> fileChecksum, PluginFiles.FileReadProgressDelegate? downloadProgress, CancellationToken token)
     {
-        await base.DownloadAssetAsyncInner(ApiDownloadHttpClient, fileUrl, outputStream, fileChecksum, downloadProgress, token);
+        await base.DownloadAssetAsyncInner(client, fileUrl, outputStream, fileChecksum, downloadProgress, token);
     }
 
     public override void Dispose()
@@ -85,10 +91,6 @@ internal partial class DNAGlobalLauncherApiMedia(string apiResponseBaseUrl) : La
 
         using (ThisInstanceLock.EnterScope())
         {
-            ApiDownloadHttpClient.Dispose();
-            ApiDownloadHttpClient = null!;
-
-            ApiResponse = null;
             base.Dispose();
         }
     }

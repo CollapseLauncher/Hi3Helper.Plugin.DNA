@@ -238,6 +238,7 @@ internal partial class DNAGlobalLauncherApiNews(string apiResponseBaseUrl) : Lau
             ApiDownloadHttpClient = null!;
 
             NewsApiResponse = null;
+            CarouselApiResponse = null;
             base.Dispose();
         }
     }

@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -39,7 +38,7 @@ public class DNAApiResponseCarousel
 
     public static DNAApiResponseCarousel ParseFrom(Stream stream)
     {
-        List<DNATurn> innerValue = new();
+        List<DNATurn> innerValue = [];
 
         using (var reader = new StreamReader(stream, leaveOpen: true))
         {
@@ -49,7 +48,6 @@ public class DNAApiResponseCarousel
                     ResponseData = innerValue,
                 };
 
-            // First line = count
             int count = int.Parse(reader.ReadLine() ?? "0");
 
             for (int i = 0; i < count; i++)

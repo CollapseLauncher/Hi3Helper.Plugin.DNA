@@ -57,8 +57,6 @@ internal partial class DNAGameManager : GameManagerBase
     private JsonObject CurrentGameConfigNode { get; set; } = new();
 #endif
 
-    internal string CurrentGameTag { get; }
-
     internal string? GameResourceJsonUrl   { get; set; }
     internal string? GameResourceBaseUrl   { get; set; }
     internal string? GameResourceBasisPath { get; set; }
@@ -379,7 +377,6 @@ internal partial class DNAGameManager : GameManagerBase
         }
 
 #if !USELIGHTWEIGHTJSONPARSER
-        CurrentGameConfigNode.SetConfigValueIfEmpty("tag", CurrentGameTag);
         CurrentGameConfigNode.SetConfigValueIfEmpty("name", ApiGameConfigResponse?.ResponseData?.GameExecutableFileName ?? Path.GetFileNameWithoutExtension(CurrentGameExecutableByPreset));
 #endif
         if (CurrentGameVersion == GameVersion.Empty)

@@ -43,8 +43,8 @@ public partial class DNAPlugin : PluginBase
     public override void GetPluginSelfUpdater(out IPluginSelfUpdate selfUpdate) => selfUpdate = _selfUpdaterInstance ??= new DNAPluginSelfUpdate();
 
     private string? _getPluginAppIconUrl;
-    public override void GetPluginAppIconUrl(out string result) => result = _getPluginAppIconUrl ??= Convert.ToBase64String(DNAIconData.DNAAppIconData);
+    public override void GetPluginAppIconUrl(out string result) => result = _getPluginAppIconUrl ??= Convert.ToBase64String(DNAImageData.DNAAppIconData);
 
     private string? _getNotificationPosterUrl;
-    public override void GetNotificationPosterUrl(out string result) => result = _getNotificationPosterUrl ??= Convert.ToBase64String(DNAIconData.DNAAppPosterData);
+    public override void GetNotificationPosterUrl(out string result) => result = _getNotificationPosterUrl ??= Convert.ToBase64String(DNAImageData.DNAAppPosterData);
 }
