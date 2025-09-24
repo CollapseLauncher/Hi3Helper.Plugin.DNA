@@ -18,7 +18,6 @@ namespace Hi3Helper.Plugin.DNA.Management.PresetConfig;
 public partial class DNAGlobalPresetConfig : PluginPresetConfigBase
 {
     private const string ApiResponseUrl = "http://pan01-cdn-aws-jp.dna-herogame.com/";
-    private const string CurrentUninstKey = "";
     private const string ExecutableName = "EM.exe";
     private const string VendorName = "HeroGames";
 
@@ -96,7 +95,7 @@ public partial class DNAGlobalPresetConfig : PluginPresetConfigBase
 
     public override IGameManager? GameManager
     {
-        get => field ??= new DNAGameManager(ExecutableName, ApiResponseUrl, CurrentUninstKey);
+        get => field ??= new DNAGameManager(ExecutableName, ApiResponseUrl);
         set;
     }
 

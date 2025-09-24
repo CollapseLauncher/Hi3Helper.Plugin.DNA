@@ -74,7 +74,7 @@ internal partial class DNAGlobalLauncherApiMedia(string apiResponseBaseUrl) : La
 
     protected override async Task<int> InitAsync(CancellationToken token)
     {
-        return 69420;
+        return 0;
     }
 
     protected override async Task DownloadAssetAsyncInner(HttpClient? client, string fileUrl, Stream outputStream, PluginDisposableMemory<byte> fileChecksum, PluginFiles.FileReadProgressDelegate? downloadProgress, CancellationToken token)

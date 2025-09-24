@@ -10,6 +10,8 @@ using System.Net.Http;
 using System.Runtime.InteropServices.Marshalling;
 using System.Threading;
 using System.Threading.Tasks;
+using Hi3Helper.Plugin.Core.Management;
+
 // ReSharper disable InconsistentNaming
 
 #if USELIGHTWEIGHTJSONPARSER
@@ -99,7 +101,7 @@ internal partial class DNAGlobalLauncherApiNews(string apiResponseBaseUrl) : Lau
                 string date = validEntries[i].Date;
 
                 ref LauncherNewsEntry unmanagedEntry = ref memory[i];
-                unmanagedEntry.Write(title, description, url, date);
+                unmanagedEntry.Write(title, description, url, date, LauncherNewsEntryType.Notice);
             }
 
             isAllocated = true;
