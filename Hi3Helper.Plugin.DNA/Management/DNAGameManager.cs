@@ -60,8 +60,7 @@ internal partial class DNAGameManager : GameManagerBase
         {
             string executablePath1 =
                 Path.Combine(CurrentGameInstallPath ?? string.Empty, CurrentGameExecutableByPreset);
-            string executablePath2 = Path.Combine(CurrentGameInstallPath ?? string.Empty,
-                Path.GetFileNameWithoutExtension(CurrentGameExecutableByPreset), "Client-Win64-ShippingBase.dll");
+            string executablePath2 = Path.Combine(CurrentGameInstallPath ?? string.Empty, "Binaries/Win64/EM-Win64-Shipping.exe");
             string executablePath3 = Path.Combine(CurrentGameInstallPath ?? string.Empty, "EM.exe");
             return File.Exists(executablePath1) && File.Exists(executablePath2) && File.Exists(executablePath3);
         }

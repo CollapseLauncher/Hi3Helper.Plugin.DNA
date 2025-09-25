@@ -39,19 +39,22 @@ internal partial class DNAGlobalLauncherApiNews(string apiResponseBaseUrl) : Lau
         set;
     }
 
-    protected override string ApiResponseBaseUrl { get; } = apiResponseBaseUrl + "LauncherInfo/CBT2Publish_Pub/";
+    protected override string ApiResponseBaseUrl { get; } = apiResponseBaseUrl;
 
     private DNAApiResponseNews? NewsApiResponse { get; set; }
+    
     private DNAApiResponseCarousel? CarouselApiResponse { get; set; }
+
+    private DNAApiResponseMediumList? SocialApiResponse { get; set; }
 
     protected override async Task<int> InitAsync(CancellationToken token)
     {
         using HttpResponseMessage announcements = await ApiResponseHttpClient
-            .GetAsync(ApiResponseBaseUrl + "AnnouncementInfo_en.txt", HttpCompletionOption.ResponseHeadersRead, token);
+            .GetAsync(ApiResponseBaseUrl + "LauncherInfo/CBT2Publish_Pub/AnnouncementInfo_en.txt", HttpCompletionOption.ResponseHeadersRead, token);
         announcements.EnsureSuccessStatusCode();
 
         using HttpResponseMessage carousel = await ApiResponseHttpClient
-            .GetAsync(ApiResponseBaseUrl + "TurnsImageInfo_en.txt", HttpCompletionOption.ResponseHeadersRead, token);
+            .GetAsync(ApiResponseBaseUrl + "LauncherInfo/CBT2Publish_Pub/TurnsImageInfo_en.txt", HttpCompletionOption.ResponseHeadersRead, token);
         carousel.EnsureSuccessStatusCode();
 
         NewsApiResponse = DNAApiResponseNews
@@ -60,8 +63,16 @@ internal partial class DNAGlobalLauncherApiNews(string apiResponseBaseUrl) : Lau
         CarouselApiResponse = DNAApiResponseCarousel
             .ParseFrom(carousel.Content.ReadAsStream(token));
 
+        using HttpResponseMessage socials = await ApiResponseHttpClient
+            .GetAsync(ApiResponseBaseUrl + "/OperationLauncherSocialMedia/OperationLauncherSocialMediaProductionGlobalonline.json", HttpCompletionOption.ResponseHeadersRead, token);
+        socials.EnsureSuccessStatusCode();
+
+        string jsonResponse = await socials.Content.ReadAsStringAsync(token);
+        SharedStatic.InstanceLogger.LogTrace("API Social Media and News response: {JsonResponse}", jsonResponse);
+        SocialApiResponse = JsonSerializer.Deserialize(jsonResponse, DNAApiResponseContext.Default.DNAApiResponseMediumList);
+
         // Initialize embedded Icon data
-        //await DNAIconData.Initialize(token);
+        await DNAImageData.Initialize(token);
 
         return 0;
     }
@@ -141,7 +152,7 @@ internal partial class DNAGlobalLauncherApiNews(string apiResponseBaseUrl) : Lau
 
             for (int i = 0; i < entryCount; i++)
             {
-                string imageUrl = ApiResponseBaseUrl + validEntries[i].ImageUrl!;
+                string imageUrl = ApiResponseBaseUrl + "LauncherInfo/CBT2Publish_Pub/" + validEntries[i].ImageUrl!;
                 string clickUrl = validEntries[i].ClickUrl!;
 
                 ref LauncherCarouselEntry unmanagedEntry = ref memory[i];
@@ -162,20 +173,22 @@ internal partial class DNAGlobalLauncherApiNews(string apiResponseBaseUrl) : Lau
     {
         InitializeEmpty(out handle, out count, out isDisposable, out isAllocated);
 
-        /*try
+        try
         {
-            if (SocialApiResponse?.ResponseData?.SocialMediaEntries == null ||
-                SocialApiResponse.ResponseData.SocialMediaEntries.Count == 0)
+            if (SocialApiResponse?.MediumList == null ||
+                SocialApiResponse.MediumList.Count == 0)
             {
-                SharedStatic.InstanceLogger.LogTrace("[HBRGlobalLauncherApiNews::GetSocialMediaEntries] API provides no Social Media entries!");
+                SharedStatic.InstanceLogger.LogTrace("[DNAGlobalLauncherApiNews::GetSocialMediaEntries] API provides no Social Media entries!");
                 InitializeEmpty(out handle, out count, out isDisposable, out isAllocated);
                 return;
             }
 
-            List<HBRApiResponseSocialResponse> validEntries = [..SocialApiResponse.ResponseData.SocialMediaEntries
-                .Where(x => !string.IsNullOrEmpty(x.SocialMediaName) &&
-                            !string.IsNullOrEmpty(x.ClickUrl) &&
-                            DNAIconData.EmbeddedDataDictionary.ContainsKey(x.SocialMediaName)
+            List<DNAApiResponseMedium> validEntries = [..SocialApiResponse.MediumList
+                .Where(x => x.Content != null &&
+                    x.Content.Any(y => y.Language?.Code == "EN" && y.Inlets != null && y.Inlets.Count > 0) &&
+                    x.Medium != null &&
+                    x.Medium?.Code != null &&
+                    DNAImageData.EmbeddedDataDictionary.ContainsKey(x.Medium!.Code)
                 )];
 
             int entryCount = validEntries.Count;
@@ -185,25 +198,25 @@ internal partial class DNAGlobalLauncherApiNews(string apiResponseBaseUrl) : Lau
             count = entryCount;
             isDisposable = true;
 
-            SharedStatic.InstanceLogger.LogTrace("[HBRGlobalLauncherApiNews::GetSocialMediaEntries] {EntryCount} entries are allocated at: 0x{Address:x8}", entryCount, handle);
+            SharedStatic.InstanceLogger.LogTrace("[DNAGlobalLauncherApiNews::GetSocialMediaEntries] {EntryCount} entries are allocated at: 0x{Address:x8}", entryCount, handle);
 
             for (int i = 0; i < entryCount; i++)
             {
-                string socialMediaName = validEntries[i].SocialMediaName!;
-                string clickUrl = validEntries[i].ClickUrl!;
-                string? qrImageUrl = validEntries[i].QrImageUrl;
+                DNAApiResponseMedium.MediumContent content = validEntries[i].Content!
+                    .First(x => x.Language != null && x.Language?.Code == "EN");
 
-                byte[]? iconData = DNAIconData.GetEmbeddedData(socialMediaName);
+                DNAApiResponseMedium.MediumInlet inlet = content.Inlets!.First();
+
+                string socialMediaName = validEntries[i].Medium?.Code!;
+                string clickUrl = inlet.Url!;
+
+                byte[]? iconData = DNAImageData.GetEmbeddedData(socialMediaName);
                 if (iconData == null)
                 {
                     continue;
                 }
 
                 ref LauncherSocialMediaEntry unmanagedEntry = ref memory[i];
-                if (!string.IsNullOrEmpty(qrImageUrl))
-                {
-                    unmanagedEntry.WriteQrImage(qrImageUrl);
-                }
 
                 unmanagedEntry.WriteIcon(iconData);
                 unmanagedEntry.WriteDescription(socialMediaName);
@@ -216,7 +229,7 @@ internal partial class DNAGlobalLauncherApiNews(string apiResponseBaseUrl) : Lau
         {
             SharedStatic.InstanceLogger.LogError(ex, "Failed to get social media entries");
             InitializeEmpty(out handle, out count, out isDisposable, out isAllocated);
-        }*/
+        }
     }
 
     private static void InitializeEmpty(out nint handle, out int count, out bool isDisposable, out bool isAllocated)
