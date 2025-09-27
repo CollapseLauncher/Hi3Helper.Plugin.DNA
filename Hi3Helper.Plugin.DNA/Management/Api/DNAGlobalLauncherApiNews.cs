@@ -68,7 +68,6 @@ internal partial class DNAGlobalLauncherApiNews(string apiResponseBaseUrl) : Lau
         socials.EnsureSuccessStatusCode();
 
         string jsonResponse = await socials.Content.ReadAsStringAsync(token);
-        SharedStatic.InstanceLogger.LogTrace("API Social Media and News response: {JsonResponse}", jsonResponse);
         SocialApiResponse = JsonSerializer.Deserialize(jsonResponse, DNAApiResponseContext.Default.DNAApiResponseMediumList);
 
         // Initialize embedded Icon data

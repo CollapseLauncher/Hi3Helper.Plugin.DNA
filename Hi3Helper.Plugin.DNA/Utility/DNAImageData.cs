@@ -7,6 +7,8 @@ using System.Linq;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
+using Hi3Helper.Plugin.Core;
+using Microsoft.Extensions.Logging;
 
 #if !USELIGHTWEIGHTJSONPARSER
 using System.Text.Json.Serialization;
@@ -79,7 +81,7 @@ public static partial class DNAImageData
 #endif
                 if (_dnaIconDataMapDictionary == null)
                 {
-                    throw new NullReferenceException("Cannot initialize MediaIconMap.json inside of the EmbeddedData");
+                    throw new NullReferenceException("Cannot initialize Map.json inside of the EmbeddedData");
                 }
 
                 Dictionary<string, string> keyValueReversed = _dnaIconDataMapDictionary.ToDictionary();
@@ -103,7 +105,7 @@ public static partial class DNAImageData
                 await copyToStream.ReadAtLeastAsync(data, data.Length, false, token).ConfigureAwait(false);
             }
 
-            string key = Path.GetFileNameWithoutExtension(entryName);
+            string key = Path.GetFileName(entryName);
             if (!_dnaIconDataMapDictionary!.TryGetValue(key, out string? keyAsValue) || string.IsNullOrEmpty(keyAsValue))
             {
                 continue;
