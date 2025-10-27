@@ -1,10 +1,8 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Hi3Helper.Plugin.DNA.Management.Api;
+namespace Hi3Helper.Plugin.DNA.Management.Api.Response;
 
-[JsonSerializable(typeof(DNAApiResponseMediumList))]
-[JsonSerializable(typeof(DNAApiResponseMedium))]
-[JsonSerializable(typeof(DNAApiResponseMedium.MediumIdentifier))]
-[JsonSerializable(typeof(DNAApiResponseMedium.MediumInlet))]
-[JsonSerializable(typeof(DNAApiResponseMedium.MediumContent))]
+[JsonSerializable(typeof(DNAApiResponseSocials))]
+[JsonSerializable(typeof(DNAApiResponseNotices))]
+[JsonSerializable(typeof(DNAApiResponseBackground))]
 public partial class DNAApiResponseContext : JsonSerializerContext;

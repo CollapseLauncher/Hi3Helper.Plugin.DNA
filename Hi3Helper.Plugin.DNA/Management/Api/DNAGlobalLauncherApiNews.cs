@@ -11,6 +11,7 @@ using System.Runtime.InteropServices.Marshalling;
 using System.Threading;
 using System.Threading.Tasks;
 using Hi3Helper.Plugin.Core.Management;
+using Hi3Helper.Plugin.DNA.Management.Api.Response;
 
 // ReSharper disable InconsistentNaming
 
@@ -41,34 +42,25 @@ internal partial class DNAGlobalLauncherApiNews(string apiResponseBaseUrl) : Lau
 
     protected override string ApiResponseBaseUrl { get; } = apiResponseBaseUrl;
 
-    private DNAApiResponseNews? NewsApiResponse { get; set; }
-    
-    private DNAApiResponseCarousel? CarouselApiResponse { get; set; }
+    private DNAApiResponseNotices? NoticesApiResponse { get; set; }
 
-    private DNAApiResponseMediumList? SocialApiResponse { get; set; }
+    private DNAApiResponseSocials? SocialApiResponse { get; set; }
 
     protected override async Task<int> InitAsync(CancellationToken token)
     {
-        using HttpResponseMessage announcements = await ApiResponseHttpClient
-            .GetAsync(ApiResponseBaseUrl + "LauncherInfo/CBT2Publish_Pub/AnnouncementInfo_en.txt", HttpCompletionOption.ResponseHeadersRead, token);
-        announcements.EnsureSuccessStatusCode();
+        using HttpResponseMessage notices = await ApiResponseHttpClient
+            .GetAsync(ApiResponseBaseUrl + "/OperationLauncherNotice/OperationLauncherNoticeProductionGlobalonline.json", HttpCompletionOption.ResponseHeadersRead, token);
+        notices.EnsureSuccessStatusCode();
 
-        using HttpResponseMessage carousel = await ApiResponseHttpClient
-            .GetAsync(ApiResponseBaseUrl + "LauncherInfo/CBT2Publish_Pub/TurnsImageInfo_en.txt", HttpCompletionOption.ResponseHeadersRead, token);
-        carousel.EnsureSuccessStatusCode();
-
-        NewsApiResponse = DNAApiResponseNews
-            .ParseFrom(announcements.Content.ReadAsStream(token));
-
-        CarouselApiResponse = DNAApiResponseCarousel
-            .ParseFrom(carousel.Content.ReadAsStream(token));
+        string noticesJsonResponse = await notices.Content.ReadAsStringAsync(token);
+        NoticesApiResponse = JsonSerializer.Deserialize(noticesJsonResponse, DNAApiResponseContext.Default.DNAApiResponseNotices);
 
         using HttpResponseMessage socials = await ApiResponseHttpClient
             .GetAsync(ApiResponseBaseUrl + "/OperationLauncherSocialMedia/OperationLauncherSocialMediaProductionGlobalonline.json", HttpCompletionOption.ResponseHeadersRead, token);
         socials.EnsureSuccessStatusCode();
 
-        string jsonResponse = await socials.Content.ReadAsStringAsync(token);
-        SocialApiResponse = JsonSerializer.Deserialize(jsonResponse, DNAApiResponseContext.Default.DNAApiResponseMediumList);
+        string socialsJsonResponse = await socials.Content.ReadAsStringAsync(token);
+        SocialApiResponse = JsonSerializer.Deserialize(socialsJsonResponse, DNAApiResponseContext.Default.DNAApiResponseSocials);
 
         // Initialize embedded Icon data
         await DNAImageData.Initialize(token);
@@ -80,18 +72,19 @@ internal partial class DNAGlobalLauncherApiNews(string apiResponseBaseUrl) : Lau
     {
         try
         {
-            if (NewsApiResponse?.ResponseData == null || NewsApiResponse?.ResponseData.Count == 0)
+            if (NoticesApiResponse == null || NoticesApiResponse.Count == 0)
             {
-                SharedStatic.InstanceLogger.LogTrace("[DNAGlobalLauncherApiNews::GetSocialMediaEntries] API provides no News entries!");
+                SharedStatic.InstanceLogger.LogTrace("[DNAGlobalLauncherApiNews::GetNewsEntries] API provides no News entries!");
                 InitializeEmpty(out handle, out count, out isDisposable, out isAllocated);
                 return;
             }
 
-            List<DNAApiResponseNews.DNAAnnouncement> validEntries = [..NewsApiResponse!.ResponseData
-                .Where(x => !string.IsNullOrEmpty(x.Title) &&
-                            !string.IsNullOrEmpty(x.Description) &&
-                            !string.IsNullOrEmpty(x.Url) &&
-                            !string.IsNullOrEmpty(x.Date)
+            List<DNAApiResponseNoticesEntry> validEntries = [..NoticesApiResponse.Values
+                .Where(x => x.Event != null &&
+                            !string.IsNullOrEmpty(x.Event.Name) &&
+                            !string.IsNullOrEmpty(x.Event.Type) &&
+                            !string.IsNullOrEmpty(x.Event.Date) &&
+                            x.Event.Content != null && x.Event.Content.Count > 0
                 )];
 
             int entryCount = validEntries.Count;
@@ -105,13 +98,34 @@ internal partial class DNAGlobalLauncherApiNews(string apiResponseBaseUrl) : Lau
 
             for (int i = 0; i < entryCount; i++)
             {
-                string title = validEntries[i].Title!;
-                string description = validEntries[i].Description!;
-                string url = validEntries[i].Url!;
-                string date = validEntries[i].Date;
+                var vEvent = validEntries[i].Event;
+                var content = vEvent.Content
+                    .Where(x => x.Language == "EN").First();
+
+                string title = content.Title;
+                string description = content.Description;
+                string url = content.ClickUrl;
+
+                long timestamp = long.Parse(vEvent.Date);
+                DateTime time = DateTimeOffset.FromUnixTimeSeconds(timestamp)
+                    .ToLocalTime().DateTime;
+                string formattedTime = time.ToString("dd/MM/yyyy");
+
+                var type = vEvent.Type switch
+                {
+                    "1" => LauncherNewsEntryType.Notice,
+                    "0" => LauncherNewsEntryType.Info,
+                    "2" => LauncherNewsEntryType.Event,
+                    _ => LauncherNewsEntryType.Notice,
+                };
 
                 ref LauncherNewsEntry unmanagedEntry = ref memory[i];
-                unmanagedEntry.Write(title, description, url, date, LauncherNewsEntryType.Notice);
+                unmanagedEntry.Write(
+                    title,
+                    description,
+                    url,
+                    formattedTime,
+                    LauncherNewsEntryType.Notice);
             }
 
             isAllocated = true;
@@ -126,52 +140,11 @@ internal partial class DNAGlobalLauncherApiNews(string apiResponseBaseUrl) : Lau
 
     public override void GetCarouselEntries(out nint handle, out int count, out bool isDisposable, out bool isAllocated)
     {
-        try
-        {
-            if (CarouselApiResponse?.ResponseData == null || CarouselApiResponse?.ResponseData.Count == 0)
-            {
-                SharedStatic.InstanceLogger.LogTrace("[DNAGlobalLauncherApiNews::GetCarouselEntries] API provides no Carousel entries!");
-                InitializeEmpty(out handle, out count, out isDisposable, out isAllocated);
-                return;
-            }
-
-            List<DNAApiResponseCarousel.DNATurn> validEntries = [..CarouselApiResponse!.ResponseData
-                .Where(x => !string.IsNullOrEmpty(x.ImageUrl) &&
-                            !string.IsNullOrEmpty(x.ClickUrl)
-                )];
-
-            int entryCount = validEntries.Count;
-            PluginDisposableMemory<LauncherCarouselEntry> memory = PluginDisposableMemory<LauncherCarouselEntry>.Alloc(entryCount);
-
-            handle = memory.AsSafePointer();
-            count = entryCount;
-            isDisposable = true;
-
-            SharedStatic.InstanceLogger.LogTrace("[DNAGlobalLauncherApiNews::GetCarouselEntries] {EntryCount} entries are allocated at: 0x{Address:x8}", entryCount, handle);
-
-            for (int i = 0; i < entryCount; i++)
-            {
-                string imageUrl = ApiResponseBaseUrl + "LauncherInfo/CBT2Publish_Pub/" + validEntries[i].ImageUrl!;
-                string clickUrl = validEntries[i].ClickUrl!;
-
-                ref LauncherCarouselEntry unmanagedEntry = ref memory[i];
-                unmanagedEntry.Write(null, imageUrl, clickUrl);
-            }
-
-            isAllocated = true;
-
-        }
-        catch (Exception ex)
-        {
-            SharedStatic.InstanceLogger.LogError(ex, "Failed to get news entries");
-            InitializeEmpty(out handle, out count, out isDisposable, out isAllocated);
-        }
+        InitializeEmpty(out handle, out count, out isDisposable, out isAllocated);
     }
 
     public override void GetSocialMediaEntries(out nint handle, out int count, out bool isDisposable, out bool isAllocated)
     {
-        InitializeEmpty(out handle, out count, out isDisposable, out isAllocated);
-
         try
         {
             if (SocialApiResponse?.MediumList == null ||
@@ -201,10 +174,10 @@ internal partial class DNAGlobalLauncherApiNews(string apiResponseBaseUrl) : Lau
 
             for (int i = 0; i < entryCount; i++)
             {
-                DNAApiResponseMedium.MediumContent content = validEntries[i].Content!
+                var content = validEntries[i].Content!
                     .First(x => x.Language != null && x.Language?.Code == "EN");
 
-                DNAApiResponseMedium.MediumInlet inlet = content.Inlets!.First();
+                var inlet = content.Inlets!.First();
 
                 string socialMediaName = validEntries[i].Medium?.Code!;
                 string clickUrl = inlet.Url!;
@@ -251,8 +224,7 @@ internal partial class DNAGlobalLauncherApiNews(string apiResponseBaseUrl) : Lau
             ApiDownloadHttpClient.Dispose();
             ApiDownloadHttpClient = null!;
 
-            NewsApiResponse = null;
-            CarouselApiResponse = null;
+            NoticesApiResponse = null;
             base.Dispose();
         }
     }

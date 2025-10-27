@@ -17,7 +17,7 @@ namespace Hi3Helper.Plugin.DNA.Management.PresetConfig;
 [GeneratedComClass]
 public partial class DNAGlobalPresetConfig : PluginPresetConfigBase
 {
-    private const string ApiResponseUrl = "http://pan01-cdn-aws-jp.dna-herogame.com/";
+    private const string ApiResponseUrl = "http://pan01-cdn-ali-jp.dna-panstudio.com/";
     private const string ExecutableName = "EM.exe";
     private const string VendorName = "HeroGames";
 
@@ -71,7 +71,7 @@ public partial class DNAGlobalPresetConfig : PluginPresetConfigBase
     [field: AllowNull, MaybeNull]
     public override string ZoneHomePageUrl => field ??= "https://duetnightabyss.dna-panstudio.com/";
 
-    public override GameReleaseChannel ReleaseChannel => GameReleaseChannel.ClosedBeta;
+    public override GameReleaseChannel ReleaseChannel => GameReleaseChannel.Public;
 
     [field: AllowNull, MaybeNull]
     public override string GameMainLanguage => field ??= "en";
