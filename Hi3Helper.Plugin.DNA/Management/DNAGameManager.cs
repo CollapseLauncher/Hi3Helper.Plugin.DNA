@@ -2,7 +2,7 @@
 using Hi3Helper.Plugin.Core.Management;
 using Hi3Helper.Plugin.Core.Management.PresetConfig;
 using Hi3Helper.Plugin.Core.Utility;
-using Hi3Helper.Plugin.DNA.Management.Api.Response;
+using Hi3Helper.Plugin.DNA.Management.Api;
 using Hi3Helper.Plugin.DNA.Management.FileStructs;
 using Hi3Helper.Plugin.DNA.Utility;
 using Microsoft.Extensions.Logging;
@@ -110,6 +110,8 @@ internal partial class DNAGameManager : GameManagerBase
         return InitAsyncInner(true, token);
     }
 
+    protected DNAApiResponseVersion? ApiResponseVersion;
+
     internal async Task<int> InitAsyncInner(bool forceInit = false, CancellationToken token = default)
     {
         if (!forceInit && IsInitialized)
@@ -122,9 +124,10 @@ internal partial class DNAGameManager : GameManagerBase
         versionResponse.EnsureSuccessStatusCode();
 
         string jsonResponse = await versionResponse.Content.ReadAsStringAsync();
-        var versions = JsonSerializer.Deserialize(jsonResponse, DNAApiResponseContext.Default.DNAApiResponseVersion);
+        ApiResponseVersion = JsonSerializer.Deserialize(jsonResponse, DNAApiResponseContext.Default.DNAApiResponseVersion);
+        var versionKey = ApiResponseVersion!.GameVersionList.First().Key;
 
-        ApiGameVersion = new GameVersion(versions!.GameVersionList.First().Key);
+        ApiGameVersion = new GameVersion(versionKey);
         IsInitialized = true;
 
         return 0;

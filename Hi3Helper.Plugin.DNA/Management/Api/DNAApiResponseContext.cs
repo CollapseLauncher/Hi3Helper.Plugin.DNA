@@ -1,6 +1,6 @@
 ﻿using System.Text.Json.Serialization;
 
-namespace Hi3Helper.Plugin.DNA.Management.Api.Response;
+namespace Hi3Helper.Plugin.DNA.Management.Api;
 
 [JsonSerializable(typeof(DNAApiResponseSocials))]
 [JsonSerializable(typeof(DNAApiResponseNotices))]
