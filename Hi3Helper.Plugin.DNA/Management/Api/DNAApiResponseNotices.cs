@@ -13,51 +13,62 @@ public class DNAApiResponseNoticesEntry
     public long EndTimestamp { get; set; }
 
     [JsonPropertyName("UniqueId")]
-    public string UniqueId { get; set; } = null!;
+    public string? UniqueId { get; set; }
 
-    public DNAApiResponseNoticesEvent Event { get; set; } = null!;
+    [JsonPropertyName("event")]
+    public DNAApiResponseNoticesEvent Event { get; set; } = new();
 }
 
 public class DNAApiResponseNoticesEvent
 {
     [JsonPropertyName("_id")]
-    public string Id { get; set; } = null!;
+    public string? Id { get; set; }
 
     [JsonPropertyName("_incrementId")]
     public int IncrementId { get; set; }
 
-    public List<DNAApiResponseNoticesContent> Content { get; set; } = null!;
+    [JsonPropertyName("content")]
+    public List<DNAApiResponseNoticesContent> Content { get; set; } = [];
 
-    public string Date { get; set; } = null!;
+    [JsonPropertyName("date")]
+    public string? Date { get; set; }
 
-    public string EffectiveTime { get; set; } = null!;
+    [JsonPropertyName("effectiveTime")]
+    public string? EffectiveTime { get; set; }
 
-    public string ExpireTime { get; set; } = null!;
+    [JsonPropertyName("expireTime")]
+    public string? ExpireTime { get; set; }
 
     [JsonPropertyName("ggType")]
-    public string Type { get; set; } = null!;
+    public string? Type { get; set; }
 
-    public string Name { get; set; } = null!;
+    [JsonPropertyName("name")]
+    public string? Name { get; set; }
 
+    [JsonPropertyName("num")]
     public int Num { get; set; }
 
-    public string ServiceType { get; set; } = null!;
+    [JsonPropertyName("serviceType")]
+    public string? ServiceType { get; set; }
 
     [JsonPropertyName("shangcicaozuo")]
-    public string ShangCiCaoZuo { get; set; } = null!;
+    public string? ShangCiCaoZuo { get; set; }
 
-    public string TestId { get; set; } = null!;
+    [JsonPropertyName("testId")]
+    public string? TestId { get; set; }
 }
 
 public class DNAApiResponseNoticesContent
 {
-    public string Language { get; set; } = null!;
+    [JsonPropertyName("language")]
+    public string? Language { get; set; }
 
-    public string Title { get; set; } = null!;
+    [JsonPropertyName("title")]
+    public string? Title { get; set; }
 
     [JsonPropertyName("titleBody")]
-    public string Description { get; set; } = null!;
+    public string? Description { get; set; }
 
     [JsonPropertyName("titleUrl")]
-    public string ClickUrl { get; set; } = null!;
+    public string? ClickUrl { get; set; }
 }

@@ -12,6 +12,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Hi3Helper.Plugin.Core.Management;
 using Hi3Helper.Plugin.DNA.Management.Api.Response;
+using System.ComponentModel;
+
 
 // ReSharper disable InconsistentNaming
 
@@ -44,6 +46,8 @@ internal partial class DNAGlobalLauncherApiNews(string apiResponseBaseUrl) : Lau
 
     private DNAApiResponseNotices? NoticesApiResponse { get; set; }
 
+    private DNAApiResponseCarousel? CarouselApiResponse { get; set; }
+
     private DNAApiResponseSocials? SocialApiResponse { get; set; }
 
     protected override async Task<int> InitAsync(CancellationToken token)
@@ -54,6 +58,13 @@ internal partial class DNAGlobalLauncherApiNews(string apiResponseBaseUrl) : Lau
 
         string noticesJsonResponse = await notices.Content.ReadAsStringAsync(token);
         NoticesApiResponse = JsonSerializer.Deserialize(noticesJsonResponse, DNAApiResponseContext.Default.DNAApiResponseNotices);
+
+        using HttpResponseMessage carousel = await ApiResponseHttpClient
+            .GetAsync(ApiResponseBaseUrl + "/OperationLauncherHeadImage/OperationLauncherHeadImageProductionGlobalonline.json", HttpCompletionOption.ResponseHeadersRead, token);
+        carousel.EnsureSuccessStatusCode();
+
+        string carouselJsonResponse = await carousel.Content.ReadAsStringAsync(token);
+        CarouselApiResponse = JsonSerializer.Deserialize(carouselJsonResponse, DNAApiResponseContext.Default.DNAApiResponseCarousel);
 
         using HttpResponseMessage socials = await ApiResponseHttpClient
             .GetAsync(ApiResponseBaseUrl + "/OperationLauncherSocialMedia/OperationLauncherSocialMediaProductionGlobalonline.json", HttpCompletionOption.ResponseHeadersRead, token);
@@ -102,11 +113,11 @@ internal partial class DNAGlobalLauncherApiNews(string apiResponseBaseUrl) : Lau
                 var content = vEvent.Content
                     .Where(x => x.Language == "EN").First();
 
-                string title = content.Title;
-                string description = content.Description;
-                string url = content.ClickUrl;
+                string title = content.Title!;
+                string description = content.Description!;
+                string url = content.ClickUrl!;
 
-                long timestamp = long.Parse(vEvent.Date);
+                long timestamp = long.Parse(vEvent.Date!);
                 DateTime time = DateTimeOffset.FromUnixTimeSeconds(timestamp)
                     .ToLocalTime().DateTime;
                 string formattedTime = time.ToString("dd/MM/yyyy");
@@ -125,7 +136,7 @@ internal partial class DNAGlobalLauncherApiNews(string apiResponseBaseUrl) : Lau
                     description,
                     url,
                     formattedTime,
-                    LauncherNewsEntryType.Notice);
+                    type);
             }
 
             isAllocated = true;
@@ -140,7 +151,64 @@ internal partial class DNAGlobalLauncherApiNews(string apiResponseBaseUrl) : Lau
 
     public override void GetCarouselEntries(out nint handle, out int count, out bool isDisposable, out bool isAllocated)
     {
-        InitializeEmpty(out handle, out count, out isDisposable, out isAllocated);
+        try
+        {
+            if (CarouselApiResponse == null || CarouselApiResponse.Count == 0)
+            {
+                SharedStatic.InstanceLogger.LogTrace("[DNAGlobalLauncherApiNews::GetCarouselEntries] API provides no Carousel entries!");
+                InitializeEmpty(out handle, out count, out isDisposable, out isAllocated);
+                return;
+            }
+
+            List<DNAApiResponseCarouselEntry> validEntries = [..CarouselApiResponse.Values
+                .Where(x => !string.IsNullOrEmpty(x.Name) &&
+                            x.Content != null && x.Content.Count > 0
+                )];
+
+            int entryCount = validEntries.Count;
+            PluginDisposableMemory<LauncherCarouselEntry> memory = PluginDisposableMemory<LauncherCarouselEntry>.Alloc(entryCount);
+
+            handle = memory.AsSafePointer();
+            count = entryCount;
+            isDisposable = true;
+
+            SharedStatic.InstanceLogger.LogTrace("[DNAGlobalLauncherApiNews::GetCarouselEntries] {EntryCount} entries are allocated at: 0x{Address:x8}", entryCount, handle);
+
+            for (int i = 0; i < entryCount; i++)
+            {
+                var contentList = validEntries[i].Content;
+                if (contentList == null)
+                    continue;
+
+                var content = contentList
+                    .Where(x => x.Language == "EN")
+                    .FirstOrDefault();
+                if (content == null)
+                    continue;
+
+                var image = content.HeadImages.FirstOrDefault();
+                if (image == null)
+                    continue;
+
+                string description = image.Description!;
+                string imageUrl = image.ImageUrl!;
+                string url = image.ClickUrl!;
+
+                ref LauncherCarouselEntry unmanagedEntry = ref memory[i];
+                unmanagedEntry.Write(
+                    description,
+                    imageUrl,
+                    url);
+            }
+
+            isAllocated = true;
+
+        }
+        catch (Exception ex)
+        {
+            SharedStatic.InstanceLogger.LogError(ex, "Failed to get carousel entries");
+            InitializeEmpty(out handle, out count, out isDisposable, out isAllocated);
+        }
     }
 
     public override void GetSocialMediaEntries(out nint handle, out int count, out bool isDisposable, out bool isAllocated)

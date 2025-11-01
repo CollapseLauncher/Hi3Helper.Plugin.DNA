@@ -32,12 +32,9 @@ internal static class DNAUtility
             builder.SetAllowedDecompression(DecompressionMethods.None);
         }
 
-        builder.AddHeader("sec-ch-ua", "\"Not?A_Brand\";v=\"8\", \"Chromium\";v=\"108\"")
-            .AddHeader("sec-ch-ua-mobile", "?0")
-            .AddHeader("sec-ch-ua-platform", "Windows")
-            .AddHeader("Sec-Fetch-Site", "cross-site")
-            .AddHeader("Sec-Fetch-Mode", "cors")
-            .AddHeader("Sec-Fetch-Dest", "empty");
+        builder.AddHeader("Accept", "*/*")
+            .AddHeader("Accept-Encoding", "deflate, gzip")
+            .AddHeader("Content-Length", "0");
 
         return builder;
     }
