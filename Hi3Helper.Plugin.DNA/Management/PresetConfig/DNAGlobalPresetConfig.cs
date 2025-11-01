@@ -19,11 +19,11 @@ public partial class DNAGlobalPresetConfig : PluginPresetConfigBase
 {
     private const string ApiResponseUrl = "http://pan01-cdn-ali-jp.dna-panstudio.com/";
     private const string ExecutableName = "EM.exe";
-    private const string VendorName = "HeroGames";
+    private const string VendorName = "Hero Games";
 
     private static readonly List<string> _supportedLanguages = ["Simplified Chinese", "Tradicional Chinese", "Japanese", "English"];
 
-    public override string? GameName => field ??= "Duet Night Abyss";
+    public override string GameName => "Duet Night Abyss";
 
     [field: AllowNull, MaybeNull]
     public override string GameExecutableName => field ??= ExecutableName;
@@ -43,10 +43,10 @@ public partial class DNAGlobalPresetConfig : PluginPresetConfigBase
     public override string GameLogFileName => field ??= Path.Combine("Logs", "Client.log");
 
     [field: AllowNull, MaybeNull]
-    public override string GameRegistryKeyName => field ??= Path.GetFileNameWithoutExtension(ExecutableName);
+    public override string GameRegistryKeyName => field ??= GameName;
     
     [field: AllowNull, MaybeNull]
-    public override string GameVendorName => field ??= VendorName.ToLower();
+    public override string GameVendorName => field ??= VendorName;
 
     [field: AllowNull, MaybeNull]
     public override string ProfileName => field ??= "DNAGlobal";
@@ -95,7 +95,7 @@ public partial class DNAGlobalPresetConfig : PluginPresetConfigBase
 
     public override IGameManager? GameManager
     {
-        get => field ??= new DNAGameManager(ExecutableName, ApiResponseUrl);
+        get => field ??= new DNAGameManager(ExecutableName, ApiResponseUrl, this);
         set;
     }
 
