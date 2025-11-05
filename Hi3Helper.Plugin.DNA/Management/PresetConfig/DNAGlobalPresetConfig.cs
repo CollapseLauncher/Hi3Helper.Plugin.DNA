@@ -15,10 +15,11 @@ using System.Threading.Tasks;
 namespace Hi3Helper.Plugin.DNA.Management.PresetConfig;
 
 [GeneratedComClass]
-public partial class DNAGlobalPresetConfig : PluginPresetConfigBase
+public partial class DNAGlobalPresetConfig : DNAPresetConfig
 {
     private const string ApiResponseUrl = "http://pan01-cdn-ali-jp.dna-panstudio.com/";
     private const string ExecutableName = "EM.exe";
+    private const string EngineExecutableName = "EM-Win64-Shipping.exe";
     private const string VendorName = "Hero Games";
 
     private static readonly List<string> _supportedLanguages = ["Simplified Chinese", "Tradicional Chinese", "Japanese", "English"];
@@ -26,7 +27,10 @@ public partial class DNAGlobalPresetConfig : PluginPresetConfigBase
     public override string GameName => "Duet Night Abyss";
 
     [field: AllowNull, MaybeNull]
-    public override string GameExecutableName => field ??= ExecutableName;
+    public override string GameExecutableName => field ??= Path.Combine("EM", "Binaries", "Win64", EngineExecutableName);
+    
+    [field: AllowNull, MaybeNull]
+    public override string StartExecutableName => field ??= ExecutableName;
 
     public override string GameAppDataPath { 
         get
@@ -40,7 +44,7 @@ public partial class DNAGlobalPresetConfig : PluginPresetConfigBase
     }
 
     [field: AllowNull, MaybeNull]
-    public override string GameLogFileName => field ??= Path.Combine("Logs", "Client.log");
+    public override string GameLogFileName => field ??= Path.Combine("Logs", "EM.log");
 
     [field: AllowNull, MaybeNull]
     public override string GameRegistryKeyName => field ??= GameName;
@@ -101,7 +105,7 @@ public partial class DNAGlobalPresetConfig : PluginPresetConfigBase
 
     public override IGameInstaller? GameInstaller
     {
-        get => field ??= new DNAGameInstaller(GameManager);
+        get => field ??= new DNAGameInstaller(GameManager, ApiResponseUrl);
         set;
     }
 

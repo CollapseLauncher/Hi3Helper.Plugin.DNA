@@ -62,10 +62,6 @@ internal partial class DNAGameManager : GameManagerBase
     internal string? GameResourceBasisPath { get; set; }
     internal bool IsInitialized { get; set; }
 
-    protected override GameVersion CurrentGameVersion => GameVersion.Empty;
-
-    protected override GameVersion ApiGameVersion => GameVersion.Empty;
-
     protected override bool HasPreload => ApiPreloadGameVersion != GameVersion.Empty && !HasUpdate;
     protected override bool HasUpdate => IsInstalled && ApiGameVersion != CurrentGameVersion;
 

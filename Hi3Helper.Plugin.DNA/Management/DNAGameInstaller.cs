@@ -43,9 +43,11 @@ internal partial class DNAGameInstaller(IGameManager? gameManager) : GameInstall
         return Task.CompletedTask;
     }
 
-    protected override Task UninstallAsyncInner(CancellationToken token)
+    protected override async Task UninstallAsyncInner(CancellationToken token)
     {
-        // NOP
-        return Task.CompletedTask;
+        if (_gamePath == null)
+            return;
+
+        await Task.Run(() => Directory.Delete(_gamePath, true), token);
     }
 }

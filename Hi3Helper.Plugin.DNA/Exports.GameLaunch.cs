@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
+using Hi3Helper.Plugin.DNA.Management.PresetConfig;
 
 namespace Hi3Helper.Plugin.DNA;
 
@@ -21,7 +22,12 @@ public partial class DNAbyss
 
         async Task<bool> Impl()
         {
-            if (!TryGetGameProcessFromContext(context, startArgument, out Process? process))
+            if (!TryGetStartingProcessFromContext(context, startArgument, out Process? process))
+            {
+                return false;
+            }
+
+            if (!TryGetGameProcessFromContext(context, out Process? gameProcess))
             {
                 return false;
             }
@@ -44,7 +50,7 @@ public partial class DNAbyss
                 CancellationTokenSource coopCts = CancellationTokenSource.CreateLinkedTokenSource(token, gameLogReaderCts.Token);
 
                 // Run game log reader (Create a new thread)
-                _ = ReadGameLog(context, process, coopCts.Token);
+                _ = ReadGameLog(context, gameProcess, coopCts.Token);
 
                 // ReSharper disable once PossiblyMistakenUseOfCancellationToken
                 await process.WaitForExitAsync(token);
@@ -172,7 +178,7 @@ public partial class DNAbyss
         return File.Exists(gameExecutablePath);
     }
 
-    private static bool TryGetGameProcessFromContext(GameManagerExtension.RunGameFromGameManagerContext context, string? startArgument, [NotNullWhen(true)] out Process? process)
+    private static bool TryGetGameProcessFromContext(GameManagerExtension.RunGameFromGameManagerContext context, [NotNullWhen(true)] out Process? process)
     {
         process = null;
         if (!TryGetGameExecutablePath(context, out string? gameExecutablePath))
@@ -180,9 +186,50 @@ public partial class DNAbyss
             return false;
         }
 
+        ProcessStartInfo startInfo = new ProcessStartInfo(gameExecutablePath);
+
+        process = new Process
+        {
+            StartInfo = startInfo
+        };
+        return true;
+    }
+
+    private static bool TryGetStartingExecutablePath(GameManagerExtension.RunGameFromGameManagerContext context, [NotNullWhen(true)] out string? startingExecutablePath)
+    {
+        startingExecutablePath = null;
+        if (context is not { GameManager: DNAGameManager dnaGameManager, PresetConfig: DNAPresetConfig presetConfig })
+        {
+            return false;
+        }
+
+        dnaGameManager.GetGamePath(out string? gamePath);
+        string? executablePath = presetConfig?.StartExecutableName;
+
+        gamePath?.NormalizePathInplace();
+        executablePath?.NormalizePathInplace();
+
+        if (string.IsNullOrEmpty(gamePath)
+            || string.IsNullOrEmpty(executablePath))
+        {
+            return false;
+        }
+
+        startingExecutablePath = Path.Combine(gamePath, executablePath);
+        return File.Exists(startingExecutablePath);
+    }
+
+    private static bool TryGetStartingProcessFromContext(GameManagerExtension.RunGameFromGameManagerContext context, string? startArgument, [NotNullWhen(true)] out Process? process)
+    {
+        process = null;
+        if (!TryGetStartingExecutablePath(context, out string? startingExecutablePath))
+        {
+            return false;
+        }
+
         ProcessStartInfo startInfo = string.IsNullOrEmpty(startArgument) ?
-            new ProcessStartInfo(gameExecutablePath) :
-            new ProcessStartInfo(gameExecutablePath, startArgument);
+            new ProcessStartInfo(startingExecutablePath) :
+            new ProcessStartInfo(startingExecutablePath, startArgument);
 
         process = new Process
         {
@@ -208,6 +255,7 @@ public partial class DNAbyss
         }
 
         string gameLogPath = Path.Combine(gameAppDataPath, gameLogFileName);
+        InstanceLogger.LogDebug("Log: {Log}", gameLogPath);
 
         // Make artificial delay and read the game log if the window is already spawned.
         while (!token.IsCancellationRequested &&

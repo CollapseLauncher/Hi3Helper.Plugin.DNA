@@ -14,7 +14,7 @@ public class DNAFilesVersion
 public class DNAFilesVersionContainer
 {
     [JsonPropertyName("gameVersionList")]
-    public Dictionary<string, DNAFilesVersionFileInfo> GameVersionList { get; set; } = [];
+    public Dictionary<string, DNAFilesVersionFileInfo> FilesList { get; set; } = [];
 }
 
 public class DNAFilesVersionFileInfo
