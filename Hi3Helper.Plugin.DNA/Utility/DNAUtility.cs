@@ -1,17 +1,11 @@
-﻿using Hi3Helper.Plugin.Core;
-using Hi3Helper.Plugin.Core.Utility;
-using Hi3Helper.Plugin.DNA.Management.Api;
-using Microsoft.Extensions.Logging;
+﻿using Hi3Helper.Plugin.Core.Utility;
 using System;
 using System.IO;
-using System.Buffers;
 using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
-using System.Text;
 
 #if !USELIGHTWEIGHTJSONPARSER
-using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 #endif
@@ -43,54 +37,26 @@ internal static class DNAUtility
         return builder;
     }
 
+    #region Hash Computation
     internal static string ComputeMd5Hex(Stream stream, CancellationToken token = default)
     {
         stream.Seek(0, SeekOrigin.Begin);
+
         using var md5 = MD5.Create();
+        byte[] hash = md5.ComputeHash(stream);
 
-        byte[] buffer = ArrayPool<byte>.Shared.Rent(64 << 10); // 64 KiB buffer
-        try
-        {
-            int bytesRead;
-            while ((bytesRead = stream.Read(buffer)) > 0)
-            {
-                md5.TransformBlock(buffer, 0, bytesRead, null, 0);
-            }
-            md5.TransformFinalBlock(buffer, 0, 0);
-
-            byte[] hash = md5.Hash!;
-            return Convert.ToHexStringLower(hash);
-        }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(buffer);
-        }
+        return Convert.ToHexStringLower(hash);
     }
 
 
     internal static async ValueTask<string> ComputeMd5HexAsync(Stream stream, CancellationToken token = default)
     {
         stream.Seek(0, SeekOrigin.Begin);
+
         using var md5 = MD5.Create();
+        byte[] hash = await md5.ComputeHashAsync(stream, token).ConfigureAwait(false);
 
-        await md5.ComputeHashAsync(stream, token);
-
-        byte[] buffer = ArrayPool<byte>.Shared.Rent(64 << 10); // 64 KiB buffer
-        try
-        {
-            int bytesRead;
-            while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, token).ConfigureAwait(false)) > 0)
-            {
-                md5.TransformBlock(buffer, 0, bytesRead, null, 0);
-            }
-            md5.TransformFinalBlock(buffer, 0, 0);
-
-            byte[] hash = md5.Hash!;
-            return Convert.ToHexStringLower(hash);
-        }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(buffer);
-        }
+        return Convert.ToHexStringLower(hash);
     }
+    #endregion
 }

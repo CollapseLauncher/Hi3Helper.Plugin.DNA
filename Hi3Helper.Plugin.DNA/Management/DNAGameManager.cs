@@ -4,6 +4,7 @@ using Hi3Helper.Plugin.Core.Management.PresetConfig;
 using Hi3Helper.Plugin.Core.Utility;
 using Hi3Helper.Plugin.DNA.Management.Api;
 using Hi3Helper.Plugin.DNA.Management.FileStructs;
+using Hi3Helper.Plugin.DNA.Management.PresetConfig;
 using Hi3Helper.Plugin.DNA.Utility;
 using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
@@ -30,7 +31,7 @@ internal partial class DNAGameManager : GameManagerBase
     internal DNAGameManager(
         string gameExecutableNameByPreset,
         string apiResponseBaseUrl,
-        PluginPresetConfigBase preset)
+        DNAPresetConfig preset)
     {
         CurrentGameExecutableByPreset = gameExecutableNameByPreset;
         ApiResponseBaseUrl = apiResponseBaseUrl;
@@ -56,7 +57,7 @@ internal partial class DNAGameManager : GameManagerBase
 
     private string CurrentGameExecutableByPreset { get; }
 
-    private PluginPresetConfigBase Preset { get; }
+    private DNAPresetConfig Preset { get; }
 
     internal string? GameResourceBaseUrl { get; set; }
     internal string? GameResourceBasisPath { get; set; }
@@ -156,7 +157,7 @@ internal partial class DNAGameManager : GameManagerBase
                 if (launcherDir == null)
                     continue;
 
-                var exePath = $"{Preset.LauncherGameDirectoryName}\\{Preset.GameExecutableName}";
+                var exePath = $"{Preset.LauncherGameDirectoryName}\\{Preset.StartExecutableName}";
                 var expectedExe = Path.Combine(launcherDir, exePath);
 
                 if (!File.Exists(expectedExe))
