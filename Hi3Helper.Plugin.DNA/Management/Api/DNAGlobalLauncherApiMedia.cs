@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 namespace Hi3Helper.Plugin.DNA.Management.Api;
 
 [GeneratedComClass]
-internal partial class DNAGlobalLauncherApiMedia(string apiResponseBaseUrl) : LauncherApiMediaBase
+internal partial class DNAGlobalLauncherApiMedia(string apiResponseBaseUrl, string logoUrl, string backgroundUrl) : LauncherApiMediaBase
 {
     [field: AllowNull, MaybeNull]
     protected override HttpClient ApiResponseHttpClient
@@ -26,14 +26,26 @@ internal partial class DNAGlobalLauncherApiMedia(string apiResponseBaseUrl) : La
     [field: AllowNull, MaybeNull]
     protected HttpClient ApiDownloadHttpClient
     {
-        get => field ??= DNAUtility.CreateApiHttpClient();
+        get => field ??= DNAUtility.CreateVideoHttpClient();
         set;
     }
 
     protected override string ApiResponseBaseUrl { get; } = apiResponseBaseUrl;
 
+    protected string LogoUrl { get; } = logoUrl;
+    protected string BackgroundUrl { get; } = backgroundUrl;
+
     public override unsafe void GetBackgroundEntries(out nint handle, out int count, out bool isDisposable, out bool isAllocated)
     {
+        if (BackgroundUrl == null)
+        {
+            isDisposable = false;
+            handle = nint.Zero;
+            count = 0;
+            isAllocated = false;
+            return;
+        }
+
         using (ThisInstanceLock.EnterScope())
         {
             PluginDisposableMemory<LauncherPathEntry> backgroundEntries = PluginDisposableMemory<LauncherPathEntry>.Alloc();
@@ -41,7 +53,7 @@ internal partial class DNAGlobalLauncherApiMedia(string apiResponseBaseUrl) : La
             try
             {
                 ref LauncherPathEntry entry = ref backgroundEntries[0];
-                entry.Write("https://cl-plugin-cdn.gablm.dev/DNA/background.jpg", []);
+                entry.Write(BackgroundUrl, []);
 
                 isAllocated = true;
             }
@@ -56,17 +68,40 @@ internal partial class DNAGlobalLauncherApiMedia(string apiResponseBaseUrl) : La
 
     public override void GetLogoOverlayEntries(out nint handle, out int count, out bool isDisposable, out bool isAllocated)
     {
-        isDisposable = false;
-        handle = nint.Zero;
-        count = 0;
-        isAllocated = false;
+        if (LogoUrl == null)
+        {
+            isDisposable = false;
+            handle = nint.Zero;
+            count = 0;
+            isAllocated = false;
+            return;
+        }
+
+        using (ThisInstanceLock.EnterScope())
+        {
+            PluginDisposableMemory<LauncherPathEntry> logoEntries = PluginDisposableMemory<LauncherPathEntry>.Alloc();
+
+            try
+            {
+                ref LauncherPathEntry entry = ref logoEntries[0];
+                entry.Write(LogoUrl, []);
+
+                isAllocated = true;
+            }
+            finally
+            {
+                isDisposable = logoEntries.IsDisposable == 1;
+                handle = logoEntries.AsSafePointer();
+                count = logoEntries.Length;
+            }
+        }
     }
 
     public override void GetBackgroundFlag(out LauncherBackgroundFlag result)
-        => result = LauncherBackgroundFlag.TypeIsImage | LauncherBackgroundFlag.IsSourceFile;
+        => result = LauncherBackgroundFlag.TypeIsVideo | LauncherBackgroundFlag.IsSourceFile;
 
     public override void GetLogoFlag(out LauncherBackgroundFlag result)
-        => result = LauncherBackgroundFlag.None;
+        => result = LauncherBackgroundFlag.TypeIsImage | LauncherBackgroundFlag.IsSourceFile;
 
     protected override async Task<int> InitAsync(CancellationToken token)
     {
@@ -75,7 +110,7 @@ internal partial class DNAGlobalLauncherApiMedia(string apiResponseBaseUrl) : La
 
     protected override async Task DownloadAssetAsyncInner(HttpClient? client, string fileUrl, Stream outputStream, PluginDisposableMemory<byte> fileChecksum, PluginFiles.FileReadProgressDelegate? downloadProgress, CancellationToken token)
     {
-        await base.DownloadAssetAsyncInner(client, fileUrl, outputStream, fileChecksum, downloadProgress, token);
+        await base.DownloadAssetAsyncInner(ApiDownloadHttpClient, fileUrl, outputStream, fileChecksum, downloadProgress, token);
     }
 
     public override void Dispose()

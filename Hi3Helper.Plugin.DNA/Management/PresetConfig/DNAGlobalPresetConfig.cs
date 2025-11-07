@@ -21,6 +21,7 @@ public partial class DNAGlobalPresetConfig : DNAPresetConfig
     private const string ExecutableName = "EM.exe";
     private const string EngineExecutableName = "EM-Win64-Shipping.exe";
     private const string VendorName = "Hero Games";
+    private const string BackgroundUrl = "https://video.yingxiong.com/fhd/50a2815d8e0948109da1deb9c24c5360.mp4";
 
     private static readonly List<string> _supportedLanguages = ["Simplified Chinese", "Tradicional Chinese", "Japanese", "English"];
 
@@ -87,7 +88,7 @@ public partial class DNAGlobalPresetConfig : DNAPresetConfig
 
     public override ILauncherApiMedia? LauncherApiMedia
     {
-        get => field ??= new DNAGlobalLauncherApiMedia(ApiResponseUrl);
+        get => field ??= new DNAGlobalLauncherApiMedia(ApiResponseUrl, ZoneLogoUrl, BackgroundUrl);
         set;
     }
 

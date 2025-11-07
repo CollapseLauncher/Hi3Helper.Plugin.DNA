@@ -124,7 +124,6 @@ internal partial class DNAGameManager : GameManagerBase
         var versionKey = ApiResponseVersion!.GameVersionList.First().Key;
 
         ApiGameVersion = new GameVersion(versionKey);
-        LoadConfig();
 
         IsInitialized = true;
 
