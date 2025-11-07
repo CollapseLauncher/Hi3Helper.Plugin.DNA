@@ -59,7 +59,7 @@ internal partial class DNAGameInstaller : GameInstallerBase
             }
         }
 
-        var tempJsonPath = Path.Combine(_gamePath!, "TempPath", "BaseGame.json");
+        var tempJsonPath = Path.Combine(_gamePath!, "TempPath", _baseVersion);
         await WriteVersionJson(tempJsonPath);
 
         InstallProgress installProgress = new InstallProgress
@@ -117,10 +117,10 @@ internal partial class DNAGameInstaller : GameInstallerBase
             }
         }
 
-        // Move BaseGame.json
+        // Move BaseVersion.json
         if (File.Exists(tempJsonPath))
         {
-            var mainJsonPath = Path.Combine(_gamePath!, "BaseGame.json");
+            var mainJsonPath = Path.Combine(_gamePath!, _baseVersion);
             File.Move(tempJsonPath, mainJsonPath);
         }
 

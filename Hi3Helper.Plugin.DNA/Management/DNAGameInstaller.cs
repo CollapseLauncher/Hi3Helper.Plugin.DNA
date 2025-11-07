@@ -24,7 +24,7 @@ internal partial class DNAGameInstaller : GameInstallerBase
     private DNAApiResponseVersion? _apiVersion;
     private DNAFilesVersion? _gameVersion;
 
-    private const int _chunkSize = 8388607;
+    private const string _baseVersion = "BaseVersion.json";
 
     internal DNAGameInstaller(IGameManager? gameManager, string apiResponseBaseUrl) : base(gameManager)
     {
@@ -41,12 +41,12 @@ internal partial class DNAGameInstaller : GameInstallerBase
         try
         {
             using HttpResponseMessage versionResponse =
-            await _downloadHttpClient.GetAsync(_baseVersionUrl + "BaseVersion.json", HttpCompletionOption.ResponseHeadersRead, token);
+            await _downloadHttpClient.GetAsync(_baseVersionUrl + _baseVersion, HttpCompletionOption.ResponseHeadersRead, token);
             versionResponse.EnsureSuccessStatusCode();
 
             string jsonResponse = await versionResponse.Content.ReadAsStringAsync(token);
             _apiVersion = JsonSerializer.Deserialize(jsonResponse, DNAApiResponseContext.Default.DNAApiResponseVersion);
-            SharedStatic.InstanceLogger.LogDebug("[DNAGameInstaller::InitAsync] Downloaded BaseGame.json");
+            SharedStatic.InstanceLogger.LogDebug("[DNAGameInstaller::InitAsync] Downloaded BaseVersion.json");
         }
         catch (Exception ex)
         {
@@ -57,12 +57,12 @@ internal partial class DNAGameInstaller : GameInstallerBase
         // Attempt to parse TempPath
         try
         {
-            var jsonPath = Path.Combine(_gamePath!, "TempPath", "BaseGame.json");
+            var jsonPath = Path.Combine(_gamePath!, "TempPath", _baseVersion);
             if (Path.Exists(jsonPath))
             {
                 using var jsonResponse = File.OpenRead(jsonPath);
                 _gameVersion = JsonSerializer.Deserialize(jsonResponse, DNAFilesContext.Default.DNAFilesVersion);
-                SharedStatic.InstanceLogger.LogDebug("[DNAGameInstaller::InitAsync] Deserialized BaseGame.json");
+                SharedStatic.InstanceLogger.LogDebug("[DNAGameInstaller::InitAsync] Deserialized BaseVersion.json");
             }
         }
         catch (Exception ex)

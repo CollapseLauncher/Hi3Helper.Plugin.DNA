@@ -124,6 +124,8 @@ internal partial class DNAGameManager : GameManagerBase
         var versionKey = ApiResponseVersion!.GameVersionList.First().Key;
 
         ApiGameVersion = new GameVersion(versionKey);
+        LoadConfig();
+
         IsInitialized = true;
 
         return 0;
@@ -196,9 +198,9 @@ internal partial class DNAGameManager : GameManagerBase
         {
             using FileStream fileStream = fileInfo.OpenRead();
             var versions = JsonSerializer.Deserialize(fileStream, DNAFilesContext.Default.DNAFilesVersion);
-            var currVersion = versions!.GameVersionList.Keys;
+            var currVersion = versions?.GameVersionList.Max();
 
-            CurrentGameVersion = new GameVersion(versions!.GameVersionList.First().Key);
+            CurrentGameVersion = new GameVersion(currVersion?.Key);
 
             SharedStatic.InstanceLogger.LogTrace(
                 "[DNAGameManager::LoadConfig] Loaded BaseVersion.json from directory: {Dir}",
