@@ -36,7 +36,6 @@ internal partial class DNAGameManager : GameManagerBase
         CurrentGameExecutableByPreset = gameExecutableNameByPreset;
         ApiResponseBaseUrl = apiResponseBaseUrl;
         Preset = preset;
-        
     }
 
     [field: AllowNull, MaybeNull]

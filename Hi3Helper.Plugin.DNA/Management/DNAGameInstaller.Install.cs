@@ -10,7 +10,6 @@ using SevenZipExtractor.Event;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
@@ -21,6 +20,10 @@ namespace Hi3Helper.Plugin.DNA.Management;
 
 internal partial class DNAGameInstaller : GameInstallerBase
 {
+    protected bool _canSkipDeleteZip => File.Exists(Path.Combine(_gamePath!, "@NoDeleteZip"));
+    protected bool _canSkipVerif => File.Exists(Path.Combine(_gamePath!, "@NoVerification"));
+    protected bool _canSkipExtract => File.Exists(Path.Combine(_gamePath!, "@NoExtraction"));
+
     protected override async Task StartInstallAsyncInner(InstallProgressDelegate? progressDelegate, InstallProgressStateDelegate? progressStateDelegate, CancellationToken token)
     {
         SharedStatic.InstanceLogger.LogInformation("[DNAGameInstaller::StartInstallAsyncInner] Starting installation routine.");
@@ -42,6 +45,22 @@ internal partial class DNAGameInstaller : GameInstallerBase
         var currentGameVersion = _apiVersion.GameVersionList.Max();
         var tempPath = Path.Combine(_gamePath!, "TempPath", "TempGameFiles");
         Directory.CreateDirectory(tempPath);
+
+        var pendingDownloadedVersion = _gameVersion?.GameVersionList.Max().Key;
+        if (pendingDownloadedVersion != null && pendingDownloadedVersion != currentGameVersion.Key)
+        {
+            try
+            {
+                Directory.Delete(tempPath, true);
+            }
+            catch
+            {
+                // Ignored
+            }
+        }
+
+        var tempJsonPath = Path.Combine(_gamePath!, "TempPath", "BaseGame.json");
+        await WriteVersionJson(tempJsonPath);
 
         InstallProgress installProgress = new InstallProgress
         {
@@ -86,16 +105,23 @@ internal partial class DNAGameInstaller : GameInstallerBase
             CancellationToken = token
         }, ExtractImpl);
 
-        await WriteVersionJson();
-
         foreach ((var fileName, _) in currentGameVersion.Value.FilesList)
         {
+            if (_canSkipDeleteZip) break;
+
             var filePath = Path.Combine(tempPath, fileName);
             FileInfo fileInfo = new FileInfo(filePath);
             if (fileInfo.Exists)
             {
                 fileInfo.Delete();
             }
+        }
+
+        // Move BaseGame.json
+        if (File.Exists(tempJsonPath))
+        {
+            var mainJsonPath = Path.Combine(_gamePath!, "BaseGame.json");
+            File.Move(tempJsonPath, mainJsonPath);
         }
 
         return;
@@ -191,6 +217,8 @@ internal partial class DNAGameInstaller : GameInstallerBase
 
         async ValueTask VerifyImpl(KeyValuePair<string, DNAApiResponseVersionFileInfo> file, CancellationToken innerToken)
         {
+            if (_canSkipVerif) return;
+
             (string fileName, DNAApiResponseVersionFileInfo fileDetails) = file;
 
             var filePath = Path.Combine(tempPath, fileName);
@@ -241,6 +269,8 @@ internal partial class DNAGameInstaller : GameInstallerBase
 
         async ValueTask ExtractImpl(KeyValuePair<string, DNAApiResponseVersionFileInfo> file, CancellationToken innerToken)
         {
+            if (_canSkipExtract) return;
+
             (string fileName, DNAApiResponseVersionFileInfo fileDetails) = file;
 
             var filePath = Path.Combine(tempPath, fileName);
@@ -258,35 +288,29 @@ internal partial class DNAGameInstaller : GameInstallerBase
             SharedStatic.InstanceLogger.LogTrace("Trying to extract the ZIP archive: {ZipName}", filePath);
 #endif
 
+            ArchiveFile? archiveFile = null;
 
-            using (var archive = new ZipArchive(fileStream, ZipArchiveMode.Read, leaveOpen: false))
+            void ZipProgressAdapter(object? sender, ExtractProgressProp e)
             {
-                foreach (var entry in archive.Entries)
+                Interlocked.Add(ref installProgress.DownloadedBytes, (long)e.Read);
+                progressDelegate?.Invoke(in installProgress);
+                progressStateDelegate?.Invoke(InstallProgressState.Install);
+            }
+
+            try
+            {
+                archiveFile = ArchiveFile.Create(fileStream, true);
+
+                // Start extraction
+                archiveFile.ExtractProgress += ZipProgressAdapter;
+                await archiveFile.ExtractAsync(e => Path.Combine(_gamePath, e!.FileName!), true, 1 << 20, token);
+            }
+            finally
+            {
+                if (archiveFile != null)
                 {
-                    if (string.IsNullOrEmpty(entry.Name))
-                        continue;
-
-                    string destinationPath = Path.Combine(_gamePath, entry.FullName);
-                    FileInfo info = new FileInfo(destinationPath);
-                    info.Directory?.Create();
-
-                    using var entryStream = entry.Open();
-                    using var outStream = File.Create(destinationPath);
-                    byte[] buffer = new byte[1024 * 64];
-                    int read;
-
-                    while ((read = entryStream.Read(buffer, 0, buffer.Length)) > 0)
-                    {
-                        outStream.Write(buffer, 0, read);
-
-                        Interlocked.Add(ref installProgress.DownloadedBytes, read);
-                        progressDelegate?.Invoke(in installProgress);
-                        progressStateDelegate?.Invoke(InstallProgressState.Install);
-                    }
-
-#if DEBUG
-                    SharedStatic.InstanceLogger.LogTrace("[DNAGameInstaller::StartInstallAsyncInner] {file} has been extracted from {zip}.", entry.FullName, fileName);
-#endif
+                    archiveFile.ExtractProgress -= ZipProgressAdapter;
+                    archiveFile.Dispose();
                 }
             }
 
@@ -294,28 +318,13 @@ internal partial class DNAGameInstaller : GameInstallerBase
             progressDelegate?.Invoke(in installProgress);
             progressStateDelegate?.Invoke(InstallProgressState.Install);
         }
-
-        // 1. Download main game
-        // 
-        // 1.1.  Download BaseVersion.json into <path>/TempPath
-        // 1.1.1 Check if file matches with local (if any) and restart from zero if not 
-        //
-        // 1.2   Parse and check downloaded files bytes
-        // 1.2.1 Download files/append into <path>/TempPath/TempGameFiles
-        // 1.2.2 HEAD HTTP is sent first for each file
-        // 1.2.3 GET with header "Range: bytes=<start>-<end>", where the numbers go in 8,388,607 byte intervals
-
-        // 1.3   Decompress game files into <path>
-
-        // 2. Download patches
     }
 
-    private async Task WriteVersionJson()
+    private async Task WriteVersionJson(string jsonPath)
     {
         if (_apiVersion == null)
             return;
 
-        var jsonPath = Path.Combine(_gamePath!, "TempPath", "BaseGame.json");
         FileInfo fileInfo = new FileInfo(jsonPath);
         if (!File.Exists(jsonPath) || _gameVersion == null)
         {
