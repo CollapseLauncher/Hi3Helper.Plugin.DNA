@@ -1,6 +1,5 @@
 ﻿using Hi3Helper.Plugin.Core;
 using Hi3Helper.Plugin.Core.Management;
-using Hi3Helper.Plugin.Core.Management.PresetConfig;
 using Hi3Helper.Plugin.Core.Utility;
 using Hi3Helper.Plugin.DNA.Management.Api;
 using Hi3Helper.Plugin.DNA.Management.FileStructs;
@@ -9,7 +8,6 @@ using Hi3Helper.Plugin.DNA.Utility;
 using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;

@@ -1,7 +1,6 @@
 ﻿using Hi3Helper.Plugin.DNA.Management.Api;
 using Hi3Helper.Plugin.DNA.Management.FileStructs;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Hi3Helper.Plugin.DNA.Utility;
 
