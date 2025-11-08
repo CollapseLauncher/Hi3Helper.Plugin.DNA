@@ -16,7 +16,7 @@ namespace Hi3Helper.Plugin.DNA.Management.PresetConfig;
 [GeneratedComClass]
 public partial class DNAGlobalPresetConfig : DNAPresetConfig
 {
-    private const string ApiResponseUrl = "http://pan01-cdn-ali-jp.dna-panstudio.com/";
+    private const string ApiResponseUrl = "http://pan01-cdn-aws-jp.dna-panstudio.com/";
     private const string ExecutableName = "EM.exe";
     private const string EngineExecutableName = "EM-Win64-Shipping.exe";
     private const string VendorName = "Hero Games";

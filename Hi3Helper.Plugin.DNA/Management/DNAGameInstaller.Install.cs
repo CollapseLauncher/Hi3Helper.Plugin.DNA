@@ -99,19 +99,20 @@ internal partial class DNAGameInstaller : GameInstallerBase
             if (_canSkipDeleteZip) break;
 
             var filePath = Path.Combine(tempPath, fileName);
-            FileInfo fileInfo = new FileInfo(filePath);
+            FileInfo fileInfo = new(filePath);
             if (fileInfo.Exists)
             {
                 fileInfo.Delete();
             }
         }
 
-        // Move BaseVersion.json
-        if (File.Exists(tempJsonPath))
-        {
-            var mainJsonPath = Path.Combine(_gamePath!, _baseVersion);
-            File.Move(tempJsonPath, mainJsonPath, true);
-        }
+        // Write BaseVersion.json
+        var mainJsonPath = Path.Combine(_gamePath!, _baseVersion);
+        await WriteVersionJson(mainJsonPath, true);
+
+        Directory.Delete(tempPath, true);
+
+        _gameManager?.SetCurrentGameVersion(_apiVersion.ToFile());
 
         return;
 
@@ -120,7 +121,7 @@ internal partial class DNAGameInstaller : GameInstallerBase
             (string fileName, DNAApiResponseVersionFileInfo fileDetails) = file;
 
             var filePath = Path.Combine(tempPath, fileName);
-            FileInfo fileInfo = new FileInfo(filePath);
+            FileInfo fileInfo = new(filePath);
             fileInfo.Directory?.Create();
 
             if (fileInfo.Exists)
@@ -132,13 +133,7 @@ internal partial class DNAGameInstaller : GameInstallerBase
                 }
             }
 
-            await using FileStream fileStream = fileInfo.Open(new FileStreamOptions
-            {
-                Mode = FileMode.Append,
-                Access = FileAccess.Write,
-                Share = FileShare.Write,
-                Options = FileOptions.SequentialScan
-            });
+            await using FileStream fileStream = fileInfo.Open(FileMode.Append, FileAccess.Write, FileShare.Write);
 
             string assetDownloadUrl = _baseVersionUrl + fileName;
 
@@ -213,7 +208,7 @@ internal partial class DNAGameInstaller : GameInstallerBase
             (string fileName, DNAApiResponseVersionFileInfo fileDetails) = file;
 
             var filePath = Path.Combine(tempPath, fileName);
-            FileInfo fileInfo = new FileInfo(filePath);
+            FileInfo fileInfo = new(filePath);
             fileInfo.Directory?.Create();
 
             if (fileInfo.Exists)
@@ -240,8 +235,15 @@ internal partial class DNAGameInstaller : GameInstallerBase
 
             if (expectedMd5 != null)
             {
+                var callback = (long e) =>
+                {
+                    Interlocked.Add(ref installProgress.DownloadedBytes, e);
+                    progressDelegate?.Invoke(in installProgress);
+                    progressStateDelegate?.Invoke(InstallProgressState.Verify);
+                };
+
                 var fs = File.OpenRead(filePath);
-                var checksumMd5 = (await HashUtils.ComputeMd5HexAsync(fs, token))?.Trim()?.ToLowerInvariant();
+                var checksumMd5 = (await HashUtils.ComputeMd5HexAsync(fs, callback, token))?.Trim()?.ToLowerInvariant();
                 await fs.DisposeAsync();
 
                 if (checksumMd5 != expectedMd5)
@@ -253,7 +255,6 @@ internal partial class DNAGameInstaller : GameInstallerBase
             SharedStatic.InstanceLogger.LogTrace("[DNAGameInstaller::StartInstallAsyncInner] {file} has been downloaded and checksum matches or is null.", fileName);
 #endif
             Interlocked.Increment(ref installProgress.DownloadedCount);
-            Interlocked.Add(ref installProgress.DownloadedBytes, fileInfo.Length);
             Interlocked.Increment(ref installProgress.StateCount);
             progressDelegate?.Invoke(in installProgress);
             progressStateDelegate?.Invoke(InstallProgressState.Verify);
@@ -266,7 +267,7 @@ internal partial class DNAGameInstaller : GameInstallerBase
             (string fileName, DNAApiResponseVersionFileInfo fileDetails) = file;
 
             var filePath = Path.Combine(tempPath, fileName);
-            FileInfo fileInfo = new FileInfo(filePath);
+            FileInfo fileInfo = new(filePath);
 
             await using FileStream fileStream = fileInfo.Open(new FileStreamOptions
             {
@@ -314,20 +315,25 @@ internal partial class DNAGameInstaller : GameInstallerBase
         }
     }
 
-    private async Task WriteVersionJson(string jsonPath)
+    private async Task WriteVersionJson(string jsonPath, bool isFile = false)
     {
         if (_apiVersion == null)
             return;
 
         FileInfo fileInfo = new FileInfo(jsonPath);
-        if (!File.Exists(jsonPath) || _installVersion == null)
+        fileInfo.Directory?.Create();
+
+        using var output = fileInfo.Open(FileMode.Create, FileAccess.Write, FileShare.None);
+
+        if (isFile)
         {
             var installVersion = _apiVersion.ToFile();
-            fileInfo.Directory?.Create();
-
-            using var output = File.OpenWrite(jsonPath);
             await JsonSerializer.SerializeAsync(output, installVersion, DNAFilesContext.Default.DNAFilesVersion);
         }
+        else
+        {
+            await JsonSerializer.SerializeAsync(output, _apiVersion, DNAApiResponseContext.Default.DNAApiResponseVersion);
+        }  
     }
 
     protected override Task StartPreloadAsyncInner(InstallProgressDelegate? progressDelegate, InstallProgressStateDelegate? progressStateDelegate, CancellationToken token)

@@ -12,7 +12,7 @@ internal class VersionUtils
     internal static bool CheckUpdate(ApiFilesDict? apiVersion, FilesDict? installedVersion)
         => FindMissingFiles(apiVersion, installedVersion, null).Item1.Count != 0;
 
-    internal static (ApiFilesDict, HashSet<string>) FindMissingFiles(ApiFilesDict? apiVersion, FilesDict? installedVersion, FilesDict? tempVersion)
+    internal static (ApiFilesDict, HashSet<string>) FindMissingFiles(ApiFilesDict? apiVersion, FilesDict? installedVersion, ApiFilesDict? tempVersion)
     {
         var diffVersion = new ApiFilesDict();
         var expiredFiles = new HashSet<string>();

@@ -19,6 +19,7 @@ namespace Hi3Helper.Plugin.DNA.Management;
 internal partial class DNAGameInstaller(IGameManager? gameManager, string apiResponseBaseUrl) : GameInstallerBase(gameManager)
 {
     private HttpClient _downloadHttpClient = DNAUtility.CreateApiHttpClient();
+    private DNAGameManager? _gameManager = gameManager as DNAGameManager;
 
     private string? _baseVersionUrl = apiResponseBaseUrl + "/Packages/Global/WindowsNoEditor/PC_OBT_Global_Pub/";
     private const string _baseVersion = "BaseVersion.json";
@@ -27,7 +28,7 @@ internal partial class DNAGameInstaller(IGameManager? gameManager, string apiRes
     
     private DNAApiResponseVersion? _apiVersion;
     private DNAFilesVersion? _installVersion;
-    private DNAFilesVersion? _tempVersion;
+    private DNAApiResponseVersion? _tempVersion;
 
     protected override async Task<int> InitAsync(CancellationToken token)
     {
@@ -74,7 +75,7 @@ internal partial class DNAGameInstaller(IGameManager? gameManager, string apiRes
             if (Path.Exists(jsonPath))
             {
                 using var jsonResponse = File.OpenRead(jsonPath);
-                _tempVersion = JsonSerializer.Deserialize(jsonResponse, DNAFilesContext.Default.DNAFilesVersion);
+                _tempVersion = JsonSerializer.Deserialize(jsonResponse, DNAApiResponseContext.Default.DNAApiResponseVersion);
                 SharedStatic.InstanceLogger.LogDebug("[DNAGameInstaller::InitAsync] Deserialized Temp BaseVersion.json");
             }
         }

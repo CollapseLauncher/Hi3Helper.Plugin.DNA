@@ -62,7 +62,8 @@ internal partial class DNAGameManager : GameManagerBase
     internal bool IsInitialized { get; set; }
 
     protected override bool HasPreload => false;
-    protected override bool HasUpdate => IsInstalled && VersionUtils.CheckUpdate(ApiVersion?.FilesList, InstalledVersion?.FilesList);
+    protected override bool HasUpdate => IsInstalled && InstalledVersion != null && ApiVersion != null
+        && VersionUtils.CheckUpdate(ApiVersion.FilesList, InstalledVersion.FilesList);
 
     protected override bool IsInstalled
     {
@@ -211,5 +212,10 @@ internal partial class DNAGameManager : GameManagerBase
     public override void SaveConfig()
     {
         // NOP
+    }
+
+    internal void SetCurrentGameVersion(DNAFilesVersion? version)
+    {
+        InstalledVersion = version;
     }
 }
