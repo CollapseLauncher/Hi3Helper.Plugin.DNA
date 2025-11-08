@@ -23,8 +23,8 @@ public class DNAApiResponseVersion
     }
 
     [JsonIgnore]
-    public Dictionary<string, DNAApiResponseVersionFileInfo> FilesList
-        => GameVersionList.FirstOrDefault().Value.FilesList;
+    public Dictionary<string, DNAApiResponseVersionFileInfo>? FilesList
+        => GameVersionList?.FirstOrDefault().Value.FilesList;
 }
 
 public class DNAApiResponseVersionContainer

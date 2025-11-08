@@ -12,8 +12,8 @@ public class DNAFilesVersion
     public Dictionary<string, DNAFilesVersionContainer> GameVersionList { get; set; } = [];
 
     [JsonIgnore]
-    public Dictionary<string, DNAFilesVersionFileInfo> FilesList
-        => GameVersionList.FirstOrDefault().Value.FilesList;
+    public Dictionary<string, DNAFilesVersionFileInfo>? FilesList
+        => GameVersionList?.FirstOrDefault().Value.FilesList;
 }
 
 public class DNAFilesVersionContainer
