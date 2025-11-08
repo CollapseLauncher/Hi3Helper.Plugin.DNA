@@ -250,7 +250,7 @@ internal partial class DNAGameInstaller : GameInstallerBase
             if (expectedMd5 != null)
             {
                 var fs = File.OpenRead(filePath);
-                var checksumMd5 = (await DNAUtility.ComputeMd5HexAsync(fs, token))?.Trim()?.ToLowerInvariant();
+                var checksumMd5 = (await HashUtils.ComputeMd5HexAsync(fs, token))?.Trim()?.ToLowerInvariant();
                 await fs.DisposeAsync();
 
                 if (checksumMd5 != expectedMd5)
