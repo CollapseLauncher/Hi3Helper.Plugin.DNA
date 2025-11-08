@@ -9,6 +9,7 @@ using Hi3Helper.Plugin.DNA.Utility;
 using Microsoft.Extensions.Logging;
 using Microsoft.Win32;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
@@ -62,8 +63,8 @@ internal partial class DNAGameManager : GameManagerBase
     internal string? GameResourceBasisPath { get; set; }
     internal bool IsInitialized { get; set; }
 
-    protected override bool HasPreload => ApiPreloadGameVersion != GameVersion.Empty && !HasUpdate;
-    protected override bool HasUpdate => IsInstalled && ApiGameVersion != CurrentGameVersion;
+    protected override bool HasPreload => false;
+    protected override bool HasUpdate => IsInstalled && VersionUtils.CheckUpdate(ApiVersion?.FilesList, InstalledVersion?.FilesList);
 
     protected override bool IsInstalled
     {
@@ -106,7 +107,8 @@ internal partial class DNAGameManager : GameManagerBase
         return InitAsyncInner(true, token);
     }
 
-    protected DNAApiResponseVersion? ApiResponseVersion;
+    private DNAApiResponseVersion? ApiVersion;
+    private DNAFilesVersion? InstalledVersion;
 
     internal async Task<int> InitAsyncInner(bool forceInit = false, CancellationToken token = default)
     {
@@ -120,10 +122,8 @@ internal partial class DNAGameManager : GameManagerBase
         versionResponse.EnsureSuccessStatusCode();
 
         string jsonResponse = await versionResponse.Content.ReadAsStringAsync();
-        ApiResponseVersion = JsonSerializer.Deserialize(jsonResponse, DNAApiResponseContext.Default.DNAApiResponseVersion);
-        var versionKey = ApiResponseVersion!.GameVersionList.First().Key;
-
-        ApiGameVersion = new GameVersion(versionKey);
+        ApiVersion = JsonSerializer.Deserialize(jsonResponse, DNAApiResponseContext.Default.DNAApiResponseVersion);
+        ApiGameVersion = new GameVersion(ApiVersion?.GameVersionList.First().Key);
 
         IsInitialized = true;
 
@@ -196,10 +196,8 @@ internal partial class DNAGameManager : GameManagerBase
         try
         {
             using FileStream fileStream = fileInfo.OpenRead();
-            var versions = JsonSerializer.Deserialize(fileStream, DNAFilesContext.Default.DNAFilesVersion);
-            var currVersion = versions?.GameVersionList.Max();
-
-            CurrentGameVersion = new GameVersion(currVersion?.Key);
+            InstalledVersion = JsonSerializer.Deserialize(fileStream, DNAFilesContext.Default.DNAFilesVersion);
+            CurrentGameVersion = new GameVersion(InstalledVersion?.GameVersionList.First().Key);
 
             SharedStatic.InstanceLogger.LogTrace(
                 "[DNAGameManager::LoadConfig] Loaded BaseVersion.json from directory: {Dir}",

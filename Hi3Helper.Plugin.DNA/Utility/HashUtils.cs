@@ -8,7 +8,7 @@ namespace Hi3Helper.Plugin.DNA.Utility;
 
 internal class HashUtils
 {
-    internal static string ComputeMd5Hex(Stream stream, CancellationToken token = default)
+    internal static string ComputeMd5Hex(Stream stream)
     {
         stream.Seek(0, SeekOrigin.Begin);
 

@@ -1,6 +1,8 @@
 ﻿// ReSharper disable InconsistentNaming
 
+using Hi3Helper.Plugin.DNA.Management.Api;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json.Serialization;
 
 namespace Hi3Helper.Plugin.DNA.Management.FileStructs;
@@ -9,6 +11,10 @@ public class DNAFilesVersion
 {
     [JsonPropertyName("gameVersionList")]
     public Dictionary<string, DNAFilesVersionContainer> GameVersionList { get; set; } = [];
+
+    [JsonIgnore]
+    public Dictionary<string, DNAFilesVersionFileInfo> FilesList
+        => GameVersionList.FirstOrDefault().Value.FilesList;
 }
 
 public class DNAFilesVersionContainer

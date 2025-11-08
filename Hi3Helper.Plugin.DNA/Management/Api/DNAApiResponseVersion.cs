@@ -1,8 +1,8 @@
 ﻿// ReSharper disable InconsistentNaming
 
 using Hi3Helper.Plugin.DNA.Management.FileStructs;
-using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.Json.Serialization;
 
 namespace Hi3Helper.Plugin.DNA.Management.Api;
@@ -21,6 +21,10 @@ public class DNAApiResponseVersion
         }
         return ret;
     }
+
+    [JsonIgnore]
+    public Dictionary<string, DNAApiResponseVersionFileInfo> FilesList
+        => GameVersionList.FirstOrDefault().Value.FilesList;
 }
 
 public class DNAApiResponseVersionContainer
