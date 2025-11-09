@@ -10,6 +10,7 @@ using SevenZipExtractor.Event;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
@@ -49,6 +50,7 @@ internal partial class DNAGameInstaller : GameInstallerBase
         var tempJsonPath = Path.Combine(_gamePath!, "TempPath", _baseVersion);
         await WriteVersionJson(tempJsonPath);
 
+        // 1. File Download
         InstallProgress installProgress = new()
         {
             StateCount = 0,
@@ -59,8 +61,6 @@ internal partial class DNAGameInstaller : GameInstallerBase
             TotalBytesToDownload = await GetGameSizeAsyncInner(GameInstallerKind.Install, token)
         };
 
-        SharedStatic.InstanceLogger.LogTrace("[DNAGameInstaller::StartInstallAsyncInner] GameSize, aborting.");
-
         progressDelegate?.Invoke(in installProgress);
         progressStateDelegate?.Invoke(InstallProgressState.Download);
 
@@ -70,6 +70,7 @@ internal partial class DNAGameInstaller : GameInstallerBase
             CancellationToken = token
         }, DownloadImpl);
 
+        // 2. File Verification
         installProgress.StateCount = 0;
         installProgress.DownloadedCount = 0;
         installProgress.DownloadedBytes = 0;
@@ -82,6 +83,7 @@ internal partial class DNAGameInstaller : GameInstallerBase
             CancellationToken = token
         }, VerifyImpl);
 
+        // 3. File Extraction
         installProgress.StateCount = 0;
         installProgress.DownloadedCount = 0;
         installProgress.DownloadedBytes = 0;
@@ -94,6 +96,7 @@ internal partial class DNAGameInstaller : GameInstallerBase
             CancellationToken = token
         }, ExtractImpl);
 
+        // 4. File Cleanup
         foreach ((var fileName, _) in missingFiles)
         {
             if (_canSkipDeleteZip) break;
@@ -106,7 +109,7 @@ internal partial class DNAGameInstaller : GameInstallerBase
             }
         }
 
-        // Write BaseVersion.json
+        // 5. Finalize installation - Write BaseVersion.json
         var mainJsonPath = Path.Combine(_gamePath!, _baseVersion);
         await WriteVersionJson(mainJsonPath, true);
 
@@ -116,6 +119,7 @@ internal partial class DNAGameInstaller : GameInstallerBase
 
         return;
 
+        #region Subroutine - File Download
         async ValueTask DownloadImpl(KeyValuePair<string, DNAApiResponseVersionFileInfo> file, CancellationToken innerToken)
         {
             (string fileName, DNAApiResponseVersionFileInfo fileDetails) = file;
@@ -200,7 +204,9 @@ internal partial class DNAGameInstaller : GameInstallerBase
             SharedStatic.InstanceLogger.LogTrace("Downloaded asset from URL: {AssetUrl}", assetDownloadUrl);
 #endif
         }
+#endregion
 
+        #region Subroutine - File Verification
         async ValueTask VerifyImpl(KeyValuePair<string, DNAApiResponseVersionFileInfo> file, CancellationToken innerToken)
         {
             if (_canSkipVerif) return;
@@ -259,7 +265,9 @@ internal partial class DNAGameInstaller : GameInstallerBase
             progressDelegate?.Invoke(in installProgress);
             progressStateDelegate?.Invoke(InstallProgressState.Verify);
         }
+        #endregion
 
+        #region Subroutine - File Extraction
         async ValueTask ExtractImpl(KeyValuePair<string, DNAApiResponseVersionFileInfo> file, CancellationToken innerToken)
         {
             if (_canSkipExtract) return;
@@ -313,6 +321,7 @@ internal partial class DNAGameInstaller : GameInstallerBase
             progressDelegate?.Invoke(in installProgress);
             progressStateDelegate?.Invoke(InstallProgressState.Install);
         }
+        #endregion
     }
 
     private async Task WriteVersionJson(string jsonPath, bool isFile = false)
@@ -336,15 +345,15 @@ internal partial class DNAGameInstaller : GameInstallerBase
         }  
     }
 
+    protected override Task StartUpdateAsyncInner(InstallProgressDelegate? progressDelegate, InstallProgressStateDelegate? progressStateDelegate, CancellationToken token)
+    {
+        // Updates are the exact same as installs, but BaseVersions already exists! °□°
+        return StartInstallAsyncInner(progressDelegate, progressStateDelegate, token);
+    }
+
     protected override Task StartPreloadAsyncInner(InstallProgressDelegate? progressDelegate, InstallProgressStateDelegate? progressStateDelegate, CancellationToken token)
     {
         // NOP
         return Task.CompletedTask;
-    }
-
-    protected override Task StartUpdateAsyncInner(InstallProgressDelegate? progressDelegate, InstallProgressStateDelegate? progressStateDelegate, CancellationToken token)
-    {
-        // Updates are the exact same as installs, but BaseVersions already exist! °□°
-        return StartInstallAsyncInner(progressDelegate, progressStateDelegate, token);
     }
 }
