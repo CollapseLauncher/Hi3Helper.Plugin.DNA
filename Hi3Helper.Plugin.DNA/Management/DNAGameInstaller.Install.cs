@@ -50,7 +50,7 @@ internal partial class DNAGameInstaller : GameInstallerBase
         var tempJsonPath = Path.Combine(_gamePath!, "TempPath", _baseVersion);
         await WriteVersionJson(tempJsonPath);
 
-        // 1. File Download
+        // 0. Set Initial State
         InstallProgress installProgress = new()
         {
             StateCount = 0,
@@ -64,24 +64,43 @@ internal partial class DNAGameInstaller : GameInstallerBase
         progressDelegate?.Invoke(in installProgress);
         progressStateDelegate?.Invoke(InstallProgressState.Download);
 
-        await Parallel.ForEachAsync(missingFiles, new ParallelOptions
+        int retries = 0;
+        while (true)
         {
-            MaxDegreeOfParallelism = Environment.ProcessorCount,
-            CancellationToken = token
-        }, DownloadImpl);
+            // 1. File Download
+            await Parallel.ForEachAsync(missingFiles, new ParallelOptions
+            {
+                MaxDegreeOfParallelism = Environment.ProcessorCount,
+                CancellationToken = token
+            }, DownloadImpl);
 
-        // 2. File Verification
-        installProgress.StateCount = 0;
-        installProgress.DownloadedCount = 0;
-        installProgress.DownloadedBytes = 0;
-        progressDelegate?.Invoke(in installProgress);
-        progressStateDelegate?.Invoke(InstallProgressState.Verify);
+            // 2. File Verification
+            installProgress.StateCount = 0;
+            installProgress.DownloadedCount = 0;
+            installProgress.DownloadedBytes = 0;
+            progressDelegate?.Invoke(in installProgress);
+            progressStateDelegate?.Invoke(InstallProgressState.Verify);
 
-        await Parallel.ForEachAsync(missingFiles, new ParallelOptions
-        {
-            MaxDegreeOfParallelism = Environment.ProcessorCount,
-            CancellationToken = token
-        }, VerifyImpl);
+            await Parallel.ForEachAsync(missingFiles, new ParallelOptions
+            {
+                MaxDegreeOfParallelism = Environment.ProcessorCount,
+                CancellationToken = token
+            }, VerifyImpl);
+
+            retries++;
+
+            if (retries >= 5)
+            {
+                throw new Exception("Exceeded amount of allowed retries.");
+            }
+
+            if (filesToDelete.Count == 0)
+                break;
+
+            progressDelegate?.Invoke(in installProgress);
+            progressStateDelegate?.Invoke(InstallProgressState.Download);
+            // TODO: Fix display when file is corrupt
+        }
 
         // 3. File Extraction
         installProgress.StateCount = 0;
@@ -236,7 +255,10 @@ internal partial class DNAGameInstaller : GameInstallerBase
             var downloadedSize = new FileInfo(filePath).Length;
             if (downloadedSize != expectedSize)
             {
-                throw new IOException($"[DNAGameInstaller::StartInstallAsyncInner] File size for {fileName} does not match ({downloadedSize} vs {expectedSize}).");
+                filesToDelete.Add(fileName);
+                SharedStatic.InstanceLogger.LogError("[DNAGameInstaller::StartInstallAsyncInner] File size for {fileName} does not match ({downloadedSize} vs {expectedSize}).",
+                    fileName, downloadedSize, expectedSize);
+                return;
             }
 
             if (expectedMd5 != null)
@@ -254,7 +276,10 @@ internal partial class DNAGameInstaller : GameInstallerBase
 
                 if (checksumMd5 != expectedMd5)
                 {
-                    throw new IOException($"[DNAGameInstaller::StartInstallAsyncInner] MD5 for {fileName} does not match. ({checksumMd5} vs {expectedMd5})");
+                    filesToDelete.Add(fileName);
+                    SharedStatic.InstanceLogger.LogError("[DNAGameInstaller::StartInstallAsyncInner] MD5 for {fileName} does not match. ({checksumMd5} vs {expectedMd5})",
+                        fileName, checksumMd5, expectedMd5);
+                    return;
                 }
             }
 #if DEBUG

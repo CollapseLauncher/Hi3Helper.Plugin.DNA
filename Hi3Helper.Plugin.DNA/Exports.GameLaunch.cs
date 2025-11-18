@@ -24,11 +24,7 @@ public partial class DNAbyss
         {
             if (!TryGetStartingProcessFromContext(context, startArgument, out Process? process))
             {
-                return false;
-            }
-
-            if (!TryGetGameProcessFromContext(context, out Process? gameProcess))
-            {
+                InstanceLogger.LogError("Could not find starting process R1");
                 return false;
             }
 
@@ -43,19 +39,27 @@ public partial class DNAbyss
                 }
                 catch (Exception e)
                 {
-                    InstanceLogger.LogError(e, "[Seraphim::LaunchGameFromGameManagerCoreAsync()] An error has occurred while trying to set process priority, Ignoring!");
+                    InstanceLogger.LogError(e, "[DNAbyss::LaunchGameFromGameManagerCoreAsync()] An error has occurred while trying to set process priority, Ignoring!");
                 }
 
                 CancellationTokenSource gameLogReaderCts = new();
                 CancellationTokenSource coopCts = CancellationTokenSource.CreateLinkedTokenSource(token, gameLogReaderCts.Token);
 
+                if (!TryGetGameProcessFromContext(context, out Process? gameProcess))
+                {
+                    return false;
+                }
+
                 // Run game log reader (Create a new thread)
                 _ = ReadGameLog(context, gameProcess, coopCts.Token);
 
                 // ReSharper disable once PossiblyMistakenUseOfCancellationToken
-                await process.WaitForExitAsync(token);
+                await gameProcess.WaitForExitAsync(token);
                 await gameLogReaderCts.CancelAsync();
 
+                InstanceLogger.LogError("Exited awaited");
+
+                gameProcess.Dispose();
                 return true;
             }
         }
@@ -200,6 +204,7 @@ public partial class DNAbyss
         startingExecutablePath = null;
         if (context is not { GameManager: DNAGameManager dnaGameManager, PresetConfig: DNAPresetConfig presetConfig })
         {
+            InstanceLogger.LogError("could not dereference correctly R3");
             return false;
         }
 
@@ -212,6 +217,7 @@ public partial class DNAbyss
         if (string.IsNullOrEmpty(gamePath)
             || string.IsNullOrEmpty(executablePath))
         {
+            InstanceLogger.LogError("Invalid paths? {game} {exe} R3", gamePath, executablePath);
             return false;
         }
 
@@ -224,6 +230,7 @@ public partial class DNAbyss
         process = null;
         if (!TryGetStartingExecutablePath(context, out string? startingExecutablePath))
         {
+            InstanceLogger.LogError("Could not find starting path {path} R2", startingExecutablePath);
             return false;
         }
 

@@ -25,7 +25,7 @@ internal class VersionUtils
             var tempDetails = tempVersion?.GetValueOrDefault(fileName);
             var installedDetails = installedVersion?.GetValueOrDefault(fileName);
 
-            bool isInstallChange = installedDetails != null && apiDetails.Version != installedDetails.Version;
+            bool isInstallChange = installedDetails != null && apiDetails.Version > installedDetails.Version;
             bool isNew = installedDetails == null;
 
             // If file version is not installed or has an update
@@ -35,7 +35,7 @@ internal class VersionUtils
             }
 
             // If version changed, queue file for deletion
-            if (tempDetails != null && apiDetails.Version != tempDetails.Version)
+            if (tempDetails != null && apiDetails.Version > tempDetails.Version)
             {
                 expiredFiles.Add(fileName);
             }

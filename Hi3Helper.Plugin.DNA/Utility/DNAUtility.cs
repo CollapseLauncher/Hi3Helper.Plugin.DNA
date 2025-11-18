@@ -24,7 +24,10 @@ internal static class DNAUtility
 
         builder.AddHeader("Accept", "*/*")
             .AddHeader("Accept-Encoding", "deflate, gzip")
-            .AddHeader("Content-Length", "0");
+            .AddHeader("Content-Length", "0")
+            .AddHeader("Cache-Control", "no-cache, no-store, must-revalidate")
+            .AddHeader("Pragma", "no-cache")
+            .AddHeader("Expires", "0");
 
         return builder;
     }

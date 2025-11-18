@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>disable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <Platforms>x64</Platforms>
@@ -11,14 +11,14 @@
     <Deterministic>true</Deterministic>
     <LangVersion>preview</LangVersion>
     <AssemblyName>DNAbyss</AssemblyName>
-    <ProductName>Heaven Burns Red Plugin</ProductName>
+    <ProductName>Duet Night Abyss Plugin</ProductName>
     <Product>Collapse</Product>
     <Description>This library is a plugin for adding support for Game: Duet Night Abyss on Collapse Launcher</Description>
-    <AssemblyTitle>Heaven Burns Red Plugin</AssemblyTitle>
+    <AssemblyTitle>Duet Night Abyss Plugin</AssemblyTitle>
     <Company>Collapse Launcher Team</Company>
     <Authors>$(Company). neon-nyan, Cry0, bagusnl, shatyuka, gablm.</Authors>
     <Copyright>Copyright 2022-2025 $(Company)</Copyright>
-    <Version>0.3.1</Version>
+    <Version>0.3.9</Version>
     <ApplicationIcon>icon.ico</ApplicationIcon>
     <Configurations>Debug;Release;DebugNoReflection;ReleaseNoReflection</Configurations>
   </PropertyGroup>
@@ -26,10 +26,6 @@
   <ItemGroup>
     <ProjectReference Include="..\Hi3Helper.Plugin.Core\Hi3Helper.Plugin.Core.csproj" />
     <ProjectReference Include="..\SevenZipExtractor\SevenZipExtractor\SevenZipExtractor.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="System.IO.Hashing" Version="9.0.8" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='DebugNoReflection'">
