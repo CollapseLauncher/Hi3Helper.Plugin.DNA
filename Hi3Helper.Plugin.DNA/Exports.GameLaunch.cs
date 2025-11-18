@@ -24,7 +24,6 @@ public partial class DNAbyss
         {
             if (!TryGetStartingProcessFromContext(context, startArgument, out Process? process))
             {
-                InstanceLogger.LogError("Could not find starting process R1");
                 return false;
             }
 
@@ -204,7 +203,6 @@ public partial class DNAbyss
         startingExecutablePath = null;
         if (context is not { GameManager: DNAGameManager dnaGameManager, PresetConfig: DNAPresetConfig presetConfig })
         {
-            InstanceLogger.LogError("could not dereference correctly R3");
             return false;
         }
 
@@ -217,7 +215,6 @@ public partial class DNAbyss
         if (string.IsNullOrEmpty(gamePath)
             || string.IsNullOrEmpty(executablePath))
         {
-            InstanceLogger.LogError("Invalid paths? {game} {exe} R3", gamePath, executablePath);
             return false;
         }
 
@@ -230,7 +227,6 @@ public partial class DNAbyss
         process = null;
         if (!TryGetStartingExecutablePath(context, out string? startingExecutablePath))
         {
-            InstanceLogger.LogError("Could not find starting path {path} R2", startingExecutablePath);
             return false;
         }
 
