@@ -50,13 +50,11 @@ public partial class DNAbyss
                 }
 
                 // Run game log reader (Create a new thread)
-                _ = ReadGameLog(context, gameProcess, coopCts.Token);
+                _ = ReadGameLog(context, coopCts.Token);
 
                 // ReSharper disable once PossiblyMistakenUseOfCancellationToken
-                await gameProcess.WaitForExitAsync(token);
+                await process.WaitForExitAsync(token);
                 await gameLogReaderCts.CancelAsync();
-
-                InstanceLogger.LogError("Exited awaited");
 
                 gameProcess.Dispose();
                 return true;
@@ -70,14 +68,16 @@ public partial class DNAbyss
         isGameRunning = false;
         gameStartTime = default;
 
-        if (!TryGetGameExecutablePath(context, out string? gameExecutablePath))
+        if (!TryGetStartingExecutablePath(context, out string? startingExecutablePath)
+            || !TryGetStartingExecutablePath(context, out string? gameExecutablePath))
         {
             return true;
         }
 
-        using Process? process = FindExecutableProcess(gameExecutablePath);
-        isGameRunning = process != null;
-        gameStartTime = process?.StartTime ?? default;
+        using Process? process = FindExecutableProcess(startingExecutablePath);
+        using Process? gameProcess = FindExecutableProcess(gameExecutablePath);
+        isGameRunning = process != null || gameProcess != null;
+        gameStartTime = process?.StartTime ?? gameProcess?.StartTime ?? default;
 
         return true;
     }
@@ -89,18 +89,20 @@ public partial class DNAbyss
 
         async Task<bool> Impl()
         {
-            if (!TryGetGameExecutablePath(context, out string? gameExecutablePath))
+            if (!TryGetGameExecutablePath(context, out string? gameExecutablePath)
+                || !TryGetStartingExecutablePath(context, out string? startingExecutablePath))
             {
                 return false;
             }
 
-            using Process? process = FindExecutableProcess(gameExecutablePath);
-            if (process == null)
-            {
-                return true;
-            }
+            using Process? process = FindExecutableProcess(startingExecutablePath);
+            using Process? gameProcess = FindExecutableProcess(gameExecutablePath);
 
-            await process.WaitForExitAsync(token);
+            if (gameProcess != null)
+                await gameProcess.WaitForExitAsync(token);
+            else if (process != null)
+                await process.WaitForExitAsync(token);
+
             return true;
         }
     }
@@ -241,7 +243,7 @@ public partial class DNAbyss
         return true;
     }
 
-    private static async Task ReadGameLog(GameManagerExtension.RunGameFromGameManagerContext context, Process process, CancellationToken token)
+    private static async Task ReadGameLog(GameManagerExtension.RunGameFromGameManagerContext context, CancellationToken token)
     {
         if (context is not { PresetConfig: PluginPresetConfigBase presetConfig })
         {
@@ -258,14 +260,7 @@ public partial class DNAbyss
         }
 
         string gameLogPath = Path.Combine(gameAppDataPath, gameLogFileName);
-        InstanceLogger.LogDebug("Log: {Log}", gameLogPath);
-
-        // Make artificial delay and read the game log if the window is already spawned.
-        while (!token.IsCancellationRequested &&
-               process.MainWindowHandle == nint.Zero)
-        {
-            await Task.Delay(250, token);
-        }
+        await Task.Delay(250, token);
 
         int retry = 5;
         while (!File.Exists(gameLogPath) && retry >= 0)
