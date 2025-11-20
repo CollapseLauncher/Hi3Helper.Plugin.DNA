@@ -285,10 +285,11 @@ internal partial class DNAGameInstaller : GameInstallerBase
 #if DEBUG
             SharedStatic.InstanceLogger.LogTrace("[DNAGameInstaller::StartInstallAsyncInner] {file} has been downloaded and checksum matches or is null.", fileName);
 #endif
+            filesToDelete.Remove(fileName);
             Interlocked.Increment(ref installProgress.DownloadedCount);
             Interlocked.Increment(ref installProgress.StateCount);
             progressDelegate?.Invoke(in installProgress);
-            progressStateDelegate?.Invoke(InstallProgressState.Verify);
+            progressStateDelegate?.Invoke(InstallProgressState.Verify); 
         }
         #endregion
 
