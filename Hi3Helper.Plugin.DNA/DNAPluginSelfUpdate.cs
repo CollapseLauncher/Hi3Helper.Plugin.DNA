@@ -18,7 +18,7 @@ internal partial class DNAPluginSelfUpdate : PluginSelfUpdateBase
     private const string ExCdn4Url = "https://github.com/CollapseLauncher/CollapseLauncher-ReleaseRepo/raw/main/" + ExCdnFileSuffix;
     private const string ExCdn5Url = "https://gitlab.com/bagusnl/CollapseLauncher-ReleaseRepo/-/raw/main/" + ExCdnFileSuffix;
 
-    protected readonly string[] BaseCdnUrl = [ ]; //[ExCdn1Url, ExCdn2Url, ExCdn3Url, ExCdn4Url, ExCdn5Url];
+    protected readonly string[] BaseCdnUrl = [ExCdn1Url, ExCdn2Url, ExCdn3Url, ExCdn4Url, ExCdn5Url];
     protected override ReadOnlySpan<string> BaseCdnUrlSpan => BaseCdnUrl;
     protected override HttpClient UpdateHttpClient { get; }
 
