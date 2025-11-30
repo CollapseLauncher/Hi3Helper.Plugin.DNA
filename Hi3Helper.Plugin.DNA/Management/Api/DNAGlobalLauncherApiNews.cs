@@ -47,6 +47,8 @@ internal partial class DNAGlobalLauncherApiNews(string apiResponseBaseUrl) : Lau
 
     private DNAApiResponseSocials? SocialApiResponse { get; set; }
 
+    private string LangCode => DNAUtility.GetApiLangFromLauncherLocale();
+
     protected override async Task<int> InitAsync(CancellationToken token)
     {
         using HttpResponseMessage notices = await ApiResponseHttpClient
@@ -108,7 +110,7 @@ internal partial class DNAGlobalLauncherApiNews(string apiResponseBaseUrl) : Lau
             {
                 var vEvent = validEntries[i].Event;
                 var content = vEvent.Content
-                    .Where(x => x.Language == "EN").First();
+                    .Where(x => x.Language == LangCode).First();
 
                 string title = content.Title!;
                 string description = content.Description!;
@@ -178,7 +180,7 @@ internal partial class DNAGlobalLauncherApiNews(string apiResponseBaseUrl) : Lau
                     continue;
 
                 var content = contentList
-                    .Where(x => x.Language == "EN")
+                    .Where(x => x.Language == LangCode)
                     .FirstOrDefault();
                 if (content == null)
                     continue;
@@ -222,7 +224,7 @@ internal partial class DNAGlobalLauncherApiNews(string apiResponseBaseUrl) : Lau
 
             List<DNAApiResponseMedium> validEntries = [..SocialApiResponse.MediumList
                 .Where(x => x.Content != null &&
-                    x.Content.Any(y => y.Language?.Code == "EN" && y.Inlets != null && y.Inlets.Count > 0) &&
+                    x.Content.Any(y => y.Language?.Code == LangCode && y.Inlets != null && y.Inlets.Count > 0) &&
                     x.Medium != null &&
                     x.Medium?.Code != null &&
                     DNAImageData.EmbeddedDataDictionary.ContainsKey(x.Medium!.Code)
@@ -240,7 +242,7 @@ internal partial class DNAGlobalLauncherApiNews(string apiResponseBaseUrl) : Lau
             for (int i = 0; i < entryCount; i++)
             {
                 var content = validEntries[i].Content!
-                    .First(x => x.Language != null && x.Language?.Code == "EN");
+                    .First(x => x.Language != null && x.Language?.Code == LangCode);
 
                 var inlet = content.Inlets!.First();
 

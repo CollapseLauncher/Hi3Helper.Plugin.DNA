@@ -1,4 +1,5 @@
-﻿using Hi3Helper.Plugin.Core.Utility;
+﻿using Hi3Helper.Plugin.Core;
+using Hi3Helper.Plugin.Core.Utility;
 using System.Net;
 using System.Net.Http;
 
@@ -59,4 +60,14 @@ internal static class DNAUtility
 
         return builder;
     }
+
+    internal static string GetApiLangFromLauncherLocale() => SharedStatic.PluginLocaleCode switch
+    {
+        "zh-cn" => "CN",
+        "zh-tw" => "TC",
+        "ja-jp" => "JP",
+        "ko-kr" => "KR",
+        _ => "EN",
+    };
+
 }
