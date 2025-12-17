@@ -85,6 +85,7 @@ jobs:
     - name: Copy files to target repo
       run: |
         New-Item -ItemType Directory -Force -Path ./target-repo/inhouse-plugin/duetnightabyss/build
+        New-Item -ItemType Directory -Force -Path ./target-repo/inhouse-plugin/duetnightabyss/build/Lib
         Copy-Item -Path ./publish/DNAbyss.dll -Destination ./target-repo/inhouse-plugin/duetnightabyss/
         Copy-Item -Path ./publish/DNAbyss.pdb -Destination ./target-repo/inhouse-plugin/duetnightabyss/
         Copy-Item -Path ./publish/manifest.json -Destination ./target-repo/inhouse-plugin/duetnightabyss/
