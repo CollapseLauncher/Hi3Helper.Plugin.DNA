@@ -12,13 +12,9 @@ on:
         required: true
         type: choice
         options:
-        - ReleaseNoReflectionPublish-O1
-        - ReleaseNoReflectionPublish-O2
         - ReleasePublish-O1
-        - ReleasePublish-O2
         - DebugPublish
-        - DebugNoReflectionPublish
-        default: ReleaseNoReflectionPublish-O1
+        default: DebugPublish
 
 permissions:
   id-token: write
