@@ -90,12 +90,26 @@ internal partial class DNAGlobalLauncherApiNews(string apiResponseBaseUrl) : Lau
             }
 
             List<DNAApiResponseNoticesEntry> validEntries = [..NoticesApiResponse.Values
-                .Where(x => x.Event != null &&
-                            !string.IsNullOrEmpty(x.Event.Name) &&
-                            !string.IsNullOrEmpty(x.Event.Type) &&
-                            !string.IsNullOrEmpty(x.Event.Date) &&
-                            x.Event.Content != null && x.Event.Content.Count > 0
-                )];
+                .Where(x =>
+                {
+                    if (x.Event == null) return false;
+
+                    bool isValid = true;
+                    if (x.Event.ExpireTime != null)
+                    {
+                        long timestamp = long.Parse(x.Event.ExpireTime!) / 1000;
+                        DateTime time = DateTimeOffset.FromUnixTimeSeconds(timestamp)
+                            .ToLocalTime().DateTime;
+                        isValid = time > DateTimeOffset.Now;
+                    }
+                    
+                    return
+                    !string.IsNullOrEmpty(x.Event.Name) &&
+                    !string.IsNullOrEmpty(x.Event.Type) &&
+                    !string.IsNullOrEmpty(x.Event.Date) &&
+                    x.Event.Content != null && x.Event.Content.Count > 0
+                    && isValid;
+                })];
 
             int entryCount = validEntries.Count;
             PluginDisposableMemory<LauncherNewsEntry> memory = PluginDisposableMemory<LauncherNewsEntry>.Alloc(entryCount);
@@ -160,9 +174,21 @@ internal partial class DNAGlobalLauncherApiNews(string apiResponseBaseUrl) : Lau
             }
 
             List<DNAApiResponseCarouselEntry> validEntries = [..CarouselApiResponse.Values
-                .Where(x => !string.IsNullOrEmpty(x.Name) &&
-                            x.Content != null && x.Content.Count > 0
-                )];
+                .Where(x =>
+                {
+                    bool isValid = true;
+                    if (x.ExpireTime != null)
+                    {
+                        long timestamp = long.Parse(x.ExpireTime!) / 1000;
+                        DateTime time = DateTimeOffset.FromUnixTimeSeconds(timestamp)
+                            .ToLocalTime().DateTime;
+                        isValid = time > DateTimeOffset.Now;
+                    }
+
+                    return !string.IsNullOrEmpty(x.Name) &&
+                            x.Content != null && x.Content.Count > 0 &&
+                            isValid;
+                })];
 
             int entryCount = validEntries.Count;
             PluginDisposableMemory<LauncherCarouselEntry> memory = PluginDisposableMemory<LauncherCarouselEntry>.Alloc(entryCount);

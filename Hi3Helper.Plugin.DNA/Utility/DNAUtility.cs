@@ -1,7 +1,9 @@
 ﻿using Hi3Helper.Plugin.Core;
 using Hi3Helper.Plugin.Core.Utility;
+using System;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 
 // ReSharper disable InconsistentNaming
 // ReSharper disable StringLiteralTypo
@@ -11,7 +13,18 @@ namespace Hi3Helper.Plugin.DNA.Utility;
 internal static class DNAUtility
 {
     internal static HttpClient CreateApiHttpClient(bool useCompression = true)
-        => CreateApiHttpClientBuilder(useCompression).Create();
+    {
+        var client = CreateApiHttpClientBuilder(useCompression).Create();
+        client.DefaultRequestHeaders.CacheControl = new CacheControlHeaderValue()
+        {
+            MaxAge = TimeSpan.Zero,
+            NoStore = true,
+            NoCache = true,
+            MustRevalidate = true
+        };
+
+        return client;
+    }
 
     internal static PluginHttpClientBuilder CreateApiHttpClientBuilder(bool useCompression = true)
     {
@@ -26,7 +39,6 @@ internal static class DNAUtility
         builder.AddHeader("Accept", "*/*")
             .AddHeader("Accept-Encoding", "deflate, gzip")
             .AddHeader("Content-Length", "0")
-            .AddHeader("Cache-Control", "no-cache, no-store, must-revalidate")
             .AddHeader("Pragma", "no-cache")
             .AddHeader("Expires", "0");
 
