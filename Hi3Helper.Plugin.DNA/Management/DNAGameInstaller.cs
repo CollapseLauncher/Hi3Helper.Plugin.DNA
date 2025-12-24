@@ -16,12 +16,12 @@ using System.Threading.Tasks;
 namespace Hi3Helper.Plugin.DNA.Management;
 
 [GeneratedComClass]
-internal partial class DNAGameInstaller(IGameManager? gameManager, string apiResponseBaseUrl, string apiResponseTag) : GameInstallerBase(gameManager)
+internal partial class DNAGameInstaller(IGameManager? gameManager, DNAApiResponseDetails apiResponseDetails) : GameInstallerBase(gameManager)
 {
     private HttpClient _downloadHttpClient = DNAUtility.CreateApiHttpClient();
     private DNAGameManager? _gameManager = gameManager as DNAGameManager;
 
-    private string? _baseVersionUrl = $"{apiResponseBaseUrl}/Packages/Global/WindowsNoEditor/{apiResponseTag}/";
+    private string? _baseVersionUrl = $"{apiResponseDetails.BaseUrl}/Packages/{apiResponseDetails.Region}/WindowsNoEditor/{apiResponseDetails.Tag}/";
     private const string _baseVersion = "BaseVersion.json";
 
     private string? _gamePath = null;

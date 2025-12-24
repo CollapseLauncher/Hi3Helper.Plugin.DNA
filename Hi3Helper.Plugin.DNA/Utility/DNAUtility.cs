@@ -81,5 +81,4 @@ internal static class DNAUtility
         "ko-kr" => "KR",
         _ => "EN",
     };
-
 }

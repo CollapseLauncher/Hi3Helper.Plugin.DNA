@@ -15,19 +15,19 @@ using System.Threading.Tasks;
 namespace Hi3Helper.Plugin.DNA.Management.PresetConfig;
 
 [GeneratedComClass]
-public partial class DNAGlobalPresetConfig : DNAPresetConfig
+public partial class DNAChinaPresetConfig : DNAPresetConfig
 {
     private DNAApiResponseDetails ApiResponseDetails = new DNAApiResponseDetails()
     {
         BaseUrls = [
-            "http://pan01-cdn-aws-jp.dna-panstudio.com/",
-            "http://pan01-cdn-ali-jp.dna-panstudio.com/",
-            "http://pan01-cdn-eo-jp.dna-panstudio.com/",
-            "http://pan01-cdn-hs-jp.dna-panstudio.com/",
+            "http://pan01-cdn-dna-ali.shyxhy.com",
+            "http://pan01-cdn-dna-aws.shyxhy.com",
+            "http://pan01-1-eo.shyxhy.com",
+            "http://pan01-1-hs.shyxhy.com"
         ],
-        Tag = "PC_OBT_Global_Pub",
-        Region = "Global",
-        RegionLong = "Global"
+        Tag = "PC_OBT_CN_Pub",
+        Region = "CN",
+        RegionLong = "China"
     };
 
     protected const string ExecutableName = "EM.exe";
@@ -35,7 +35,7 @@ public partial class DNAGlobalPresetConfig : DNAPresetConfig
     private const string VendorName = "Hero Games";
     protected const string BackgroundUrl = "https://video.yingxiong.com/fhd/2899ab9bef7c4a9eaf971b43fc109ec4.mp4";
     
-    private static readonly List<string> _supportedLanguages = ["Simplified Chinese", "Tradicional Chinese", "Japanese", "English"];
+    private static readonly List<string> _supportedLanguages = ["Simplified Chinese", "Tradicional Chinese"];
 
     public override string GameName => "Duet Night Abyss";
 
@@ -60,24 +60,23 @@ public partial class DNAGlobalPresetConfig : DNAPresetConfig
     public override string GameLogFileName => field ??= Path.Combine("Logs", "EM.log");
 
     [field: AllowNull, MaybeNull]
-    public override string GameRegistryKeyName => field ??= GameName;
+    public override string GameRegistryKeyName => field ??= "二重螺旋";
     
     [field: AllowNull, MaybeNull]
     public override string GameVendorName => field ??= VendorName;
 
     [field: AllowNull, MaybeNull]
-    public override string ProfileName => field ??= "DNAGlobal";
+    public override string ProfileName => field ??= "DNAChina";
 
     [field: AllowNull, MaybeNull]
     public override string ZoneDescription => field ??=
-        "Duet Night Abyss is a fantasy adventure RPG with a high degree of freedom developed by Hero Games' Pan Studio. " +
-        "The game features \"multiple weapon loadouts & 3D combat\" at its core, and tells the story of \"Demons\" from dual perspectives.";
+        "《二重螺旋》是英雄游戏旗下潘神工作室自研的一款幻想风多维战斗爽游。\n游戏以「多维武器组合×立体战斗」为核心玩法，以「双视角」讲述「恶魔」的故事。";
 
     [field: AllowNull, MaybeNull]
-    public override string ZoneName => field ??= "Global";
+    public override string ZoneName => field ??= "China";
 
     [field: AllowNull, MaybeNull]
-    public override string ZoneFullName => field ??= "Duet Night Abyss (Global)";
+    public override string ZoneFullName => field ??= "Duet Night Abyss (China)";
 
     [field: AllowNull, MaybeNull]
     public override string ZoneLogoUrl => field ??= "https://cdnstatic.herogame.com/static/duetnightabyss/4.0/imgs/icon/black-logo-en.png";
@@ -106,7 +105,7 @@ public partial class DNAGlobalPresetConfig : DNAPresetConfig
 
     public override ILauncherApiNews? LauncherApiNews
     {
-        get => field ??= new DNAGlobalLauncherApiNews(ApiResponseDetails);
+        get => field ??= new DNAGlobalLauncherApiNews(ApiResponseDetails, "CN");
         set;
     }
 

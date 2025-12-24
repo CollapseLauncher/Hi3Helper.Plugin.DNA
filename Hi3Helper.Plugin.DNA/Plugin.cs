@@ -13,7 +13,7 @@ namespace Hi3Helper.Plugin.DNA;
 [GeneratedComClass]
 public partial class DNAPlugin : PluginBase
 {
-    private static readonly IPluginPresetConfig[] PresetConfigInstances = [ new DNAGlobalPresetConfig(), new DNAEpicPresetConfig() ];
+    private static readonly IPluginPresetConfig[] PresetConfigInstances = [ new DNAGlobalPresetConfig(), new DNAEpicPresetConfig(), new DNAChinaPresetConfig(), new DNABiliBilliPresetConfig() ];
     private static DateTime _pluginCreationDate = new(2025, 09, 06, 23, 08, 0, DateTimeKind.Utc);
     private static IPluginSelfUpdate? _selfUpdaterInstance;
 

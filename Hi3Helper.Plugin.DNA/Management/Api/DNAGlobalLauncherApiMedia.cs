@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 namespace Hi3Helper.Plugin.DNA.Management.Api;
 
 [GeneratedComClass]
-internal partial class DNAGlobalLauncherApiMedia(string apiResponseBaseUrl, string logoUrl, string backgroundUrl) : LauncherApiMediaBase
+internal partial class DNAGlobalLauncherApiMedia(DNAApiResponseDetails apiResponseDetails, string logoUrl, string backgroundUrl) : LauncherApiMediaBase
 {
     [field: AllowNull, MaybeNull]
     protected override HttpClient ApiResponseHttpClient
@@ -30,7 +30,7 @@ internal partial class DNAGlobalLauncherApiMedia(string apiResponseBaseUrl, stri
         set;
     }
 
-    protected override string ApiResponseBaseUrl { get; } = apiResponseBaseUrl;
+    protected override string ApiResponseBaseUrl { get; } = apiResponseDetails.BaseUrl;
 
     protected string LogoUrl { get; } = logoUrl;
     protected string BackgroundUrl { get; } = backgroundUrl;

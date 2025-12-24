@@ -2,6 +2,7 @@
 using Hi3Helper.Plugin.DNA.Management.Api;
 using Hi3Helper.Plugin.DNA.Utility;
 using System.Diagnostics.CodeAnalysis;
+using System.Net.Security;
 using System.Runtime.InteropServices.Marshalling;
 
 // ReSharper disable IdentifierTypo
@@ -10,29 +11,32 @@ using System.Runtime.InteropServices.Marshalling;
 namespace Hi3Helper.Plugin.DNA.Management.PresetConfig;
 
 [GeneratedComClass]
-public partial class DNAEpicPresetConfig : DNAGlobalPresetConfig
+public partial class DNABiliBilliPresetConfig : DNAChinaPresetConfig
 {
     private DNAApiResponseDetails ApiResponseDetails = new DNAApiResponseDetails()
     {
         BaseUrls = [
-            "http://pan01-cdn-aws-jp.dna-panstudio.com/",
-            "http://pan01-cdn-ali-jp.dna-panstudio.com/",
-            "http://pan01-cdn-eo-jp.dna-panstudio.com/",
-            "http://pan01-cdn-hs-jp.dna-panstudio.com/",
+            "http://pan01-cdn-dna-ali.shyxhy.com",
+            "http://pan01-cdn-dna-aws.shyxhy.com",
+            "http://pan01-1-eo.shyxhy.com",
+            "http://pan01-1-hs.shyxhy.com"
         ],
-        Tag = "PC_OBT_Global_Epic_Pub",
-        Region = "Global",
-        RegionLong = "Global"
+        Tag = "PC_OBT_Bili_Pub",
+        Region = "CN",
+        RegionLong = "China"
     };
 
     [field: AllowNull, MaybeNull]
-    public override string ProfileName => field ??= "DNAEpic";
+    public override string GameRegistryKeyName => field ??= base.GameRegistryKeyName + " bilibili";
 
     [field: AllowNull, MaybeNull]
-    public override string ZoneName => field ??= "Epic Games";
+    public override string ProfileName => field ??= "DNABilibili";
 
     [field: AllowNull, MaybeNull]
-    public override string ZoneFullName => field ??= "Duet Night Abyss (Epic Games)";
+    public override string ZoneName => field ??= "Bilibili";
+
+    [field: AllowNull, MaybeNull]
+    public override string ZoneFullName => field ??= "Duet Night Abyss (Bilibili)";
 
     public override IGameManager? GameManager
     {

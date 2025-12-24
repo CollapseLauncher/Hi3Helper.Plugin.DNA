@@ -29,13 +29,12 @@ internal partial class DNAGameManager : GameManagerBase
 {
     internal DNAGameManager(
         string gameExecutableNameByPreset,
-        string apiResponseBaseUrl,
-        string apiResponseTag,
+        DNAApiResponseDetails details,
         DNAPresetConfig preset)
     {
         CurrentGameExecutableByPreset = gameExecutableNameByPreset;
-        ApiResponseBaseUrl = apiResponseBaseUrl;
-        ApiResponseTag = apiResponseTag;
+        ApiResponseBaseUrl = details.BaseUrl;
+        ApiResponseDetails = details;
         Preset = preset;
     }
 
@@ -54,7 +53,7 @@ internal partial class DNAGameManager : GameManagerBase
     }
 
     protected override string ApiResponseBaseUrl { get; }
-    protected          string ApiResponseTag { get; }
+    protected DNAApiResponseDetails ApiResponseDetails { get; }
 
     private string CurrentGameExecutableByPreset { get; }
 
@@ -117,7 +116,7 @@ internal partial class DNAGameManager : GameManagerBase
         if (!forceInit && IsInitialized)
             return 0;
 
-        var apiUrl = ApiResponseBaseUrl + $"/Packages/Global/WindowsNoEditor/{ApiResponseTag}/BaseVersion.json";
+        var apiUrl = $"{ApiResponseDetails.BaseUrl}/Packages/{ApiResponseDetails.Region}/WindowsNoEditor/{ApiResponseDetails.Tag}/BaseVersion.json";
 
         using HttpResponseMessage versionResponse =
             await ApiResponseHttpClient.GetAsync(apiUrl, HttpCompletionOption.ResponseHeadersRead, token);
