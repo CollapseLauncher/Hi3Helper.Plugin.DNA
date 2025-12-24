@@ -22,7 +22,7 @@ public partial class DNAGlobalPresetConfig : DNAPresetConfig
     protected const string ExecutableName = "EM.exe";
     private const string EngineExecutableName = "EM-Win64-Shipping.exe";
     private const string VendorName = "Hero Games";
-    protected const string BackgroundUrl = "https://video.yingxiong.com/fhd/50a2815d8e0948109da1deb9c24c5360.mp4";
+    protected const string BackgroundUrl = "https://video.yingxiong.com/fhd/2899ab9bef7c4a9eaf971b43fc109ec4.mp4";
     
     private static readonly List<string> _supportedLanguages = ["Simplified Chinese", "Tradicional Chinese", "Japanese", "English"];
 

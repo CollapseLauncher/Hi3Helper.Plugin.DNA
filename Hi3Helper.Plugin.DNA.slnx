@@ -11,4 +11,7 @@
   <Project Path="Hi3Helper.Plugin.DNA/Hi3Helper.Plugin.DNA.csproj">
     <Platform Project="x64" />
   </Project>
+  <Project Path="SevenZipExtractor/SevenZipExtractor/SevenZipExtractor.csproj">
+    <Platform Project="x64" />
+  </Project>
 </Solution>
