@@ -25,7 +25,6 @@ internal class HashUtils
         using var md5 = MD5.Create();
 
         var buffer = new byte[81920];
-        long totalBytesRead = 0;
 
         md5.Initialize();
 
@@ -33,8 +32,7 @@ internal class HashUtils
         while ((bytesRead = await stream.ReadAsync(buffer, 0, buffer.Length, token).ConfigureAwait(false)) > 0)
         {
             md5.TransformBlock(buffer, 0, bytesRead, null, 0);
-            totalBytesRead += bytesRead;
-            callback?.Invoke(totalBytesRead);
+            callback?.Invoke(bytesRead);
         }
 
         md5.TransformFinalBlock(buffer, 0, 0);

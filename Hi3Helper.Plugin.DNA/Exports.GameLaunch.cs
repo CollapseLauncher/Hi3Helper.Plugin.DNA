@@ -68,8 +68,10 @@ public partial class DNAbyss
         isGameRunning = false;
         gameStartTime = default;
 
-        if (!TryGetStartingExecutablePath(context, out string? startingExecutablePath)
-            || !TryGetStartingExecutablePath(context, out string? gameExecutablePath))
+        string? startingExecutablePath = null;
+        string? gameExecutablePath = null;
+        if (!TryGetStartingExecutablePath(context, out startingExecutablePath)
+            && !TryGetStartingExecutablePath(context, out gameExecutablePath))
         {
             return true;
         }
@@ -89,10 +91,12 @@ public partial class DNAbyss
 
         async Task<bool> Impl()
         {
-            if (!TryGetGameExecutablePath(context, out string? gameExecutablePath)
-                || !TryGetStartingExecutablePath(context, out string? startingExecutablePath))
+            string? startingExecutablePath = null;
+            string? gameExecutablePath = null;
+            if (!TryGetStartingExecutablePath(context, out startingExecutablePath)
+                && !TryGetStartingExecutablePath(context, out gameExecutablePath))
             {
-                return false;
+                return true;
             }
 
             using Process? process = FindExecutableProcess(startingExecutablePath);
@@ -130,8 +134,10 @@ public partial class DNAbyss
         return true;
     }
 
-    private static Process? FindExecutableProcess(string executablePath)
+    private static Process? FindExecutableProcess(string? executablePath)
     {
+        if (executablePath == null) return null;
+
         ReadOnlySpan<char> executableDirPath = Path.GetDirectoryName(executablePath.AsSpan());
         string executableName = Path.GetFileNameWithoutExtension(executablePath);
 

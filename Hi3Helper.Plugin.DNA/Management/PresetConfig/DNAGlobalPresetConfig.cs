@@ -17,11 +17,13 @@ namespace Hi3Helper.Plugin.DNA.Management.PresetConfig;
 public partial class DNAGlobalPresetConfig : DNAPresetConfig
 {
     private const string ApiResponseUrl = "http://pan01-cdn-hs-jp.dna-panstudio.com/";
-    private const string ExecutableName = "EM.exe";
+    private const string ApiResponseTag = "PC_OBT_Global_Pub";
+
+    protected const string ExecutableName = "EM.exe";
     private const string EngineExecutableName = "EM-Win64-Shipping.exe";
     private const string VendorName = "Hero Games";
-    private const string BackgroundUrl = "https://video.yingxiong.com/fhd/50a2815d8e0948109da1deb9c24c5360.mp4";
-
+    protected const string BackgroundUrl = "https://video.yingxiong.com/fhd/50a2815d8e0948109da1deb9c24c5360.mp4";
+    
     private static readonly List<string> _supportedLanguages = ["Simplified Chinese", "Tradicional Chinese", "Japanese", "English"];
 
     public override string GameName => "Duet Night Abyss";
@@ -99,13 +101,13 @@ public partial class DNAGlobalPresetConfig : DNAPresetConfig
 
     public override IGameManager? GameManager
     {
-        get => field ??= new DNAGameManager(ExecutableName, ApiResponseUrl, this);
+        get => field ??= new DNAGameManager(ExecutableName, ApiResponseUrl, ApiResponseTag, this);
         set;
     }
 
     public override IGameInstaller? GameInstaller
     {
-        get => field ??= new DNAGameInstaller(GameManager, ApiResponseUrl);
+        get => field ??= new DNAGameInstaller(GameManager, ApiResponseUrl, ApiResponseTag);
         set;
     }
 

@@ -111,7 +111,7 @@ internal partial class DNAGameInstaller : GameInstallerBase
 
         await Parallel.ForEachAsync(missingFiles, new ParallelOptions
         {
-            MaxDegreeOfParallelism = Environment.ProcessorCount,
+            MaxDegreeOfParallelism = Environment.ProcessorCount / 2 + 1,
             CancellationToken = token
         }, ExtractImpl);
 
@@ -317,10 +317,16 @@ internal partial class DNAGameInstaller : GameInstallerBase
 
             ArchiveFile? archiveFile = null;
 
+            bool fixSize = true;
             void ZipProgressAdapter(object? sender, ExtractProgressProp e)
             {
+                if (fixSize)
+                {
+                    Interlocked.Add(ref installProgress.TotalBytesToDownload, (long)e.TotalSize - fileDetails.Size);
+                    fixSize = false;
+                }
+
                 Interlocked.Add(ref installProgress.DownloadedBytes, (long)e.Read);
-                Interlocked.Exchange(ref installProgress.TotalBytesToDownload, (long)e.TotalSize);
                 progressDelegate?.Invoke(in installProgress);
                 progressStateDelegate?.Invoke(InstallProgressState.Install);
             }
