@@ -1,15 +1,18 @@
 ﻿using Hi3Helper.Plugin.Core.Management.PresetConfig;
 using Hi3Helper.Plugin.Core.Utility;
 using Hi3Helper.Plugin.DNA.Management;
+using Hi3Helper.Plugin.DNA.Management.PresetConfig;
+using Microsoft.Extensions.Logging;
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
-using Hi3Helper.Plugin.DNA.Management.PresetConfig;
 
 namespace Hi3Helper.Plugin.DNA;
 
@@ -22,6 +25,11 @@ public partial class DNAbyss
 
         async Task<bool> Impl()
         {
+            if (!await TryInitializeEpicLauncher(context, token))
+            {
+                return false;
+            }
+                
             if (!TryGetStartingProcessFromContext(context, startArgument, out Process? process))
             {
                 return false;
@@ -52,6 +60,8 @@ public partial class DNAbyss
                 // Run game log reader (Create a new thread)
                 _ = ReadGameLog(context, coopCts.Token);
 
+                _ = TryKillEpicLauncher(context, token);
+
                 // ReSharper disable once PossiblyMistakenUseOfCancellationToken
                 await process.WaitForExitAsync(token);
                 await gameLogReaderCts.CancelAsync();
@@ -78,8 +88,8 @@ public partial class DNAbyss
 
         using Process? process = FindExecutableProcess(startingExecutablePath);
         using Process? gameProcess = FindExecutableProcess(gameExecutablePath);
-        isGameRunning = process != null || gameProcess != null;
-        gameStartTime = process?.StartTime ?? gameProcess?.StartTime ?? default;
+        isGameRunning = process != null || gameProcess != null || IsEpicLoading;
+        gameStartTime = process?.StartTime ?? gameProcess?.StartTime ?? EpicStartTime ?? default;
 
         return true;
     }
@@ -91,6 +101,11 @@ public partial class DNAbyss
 
         async Task<bool> Impl()
         {
+            while (IsEpicLoading)
+            {
+                await Task.Delay(200, token);
+            }
+
             string? startingExecutablePath = null;
             string? gameExecutablePath = null;
             if (!TryGetStartingExecutablePath(context, out startingExecutablePath)
