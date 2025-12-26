@@ -1,7 +1,6 @@
 ﻿using Hi3Helper.Plugin.Core.Management;
 using Hi3Helper.Plugin.Core.Management.Api;
 using Hi3Helper.Plugin.DNA.Management.Api;
-using Hi3Helper.Plugin.DNA.Utility;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
@@ -17,7 +16,7 @@ namespace Hi3Helper.Plugin.DNA.Management.PresetConfig;
 [GeneratedComClass]
 public partial class DNAChinaPresetConfig : DNAPresetConfig
 {
-    private DNAApiResponseDetails ApiResponseDetails = new DNAApiResponseDetails()
+    private readonly DNAApiResponseDetails ApiResponseDetails = new()
     {
         BaseUrls = [
             "http://pan01-cdn-dna-ali.shyxhy.com",

@@ -48,6 +48,12 @@ public class DNAApiResponseMediumInlet
 
     [JsonPropertyName("inletUrl")]
     public string? Url { get; set; }
+
+    [JsonPropertyName("image")]
+    public string? ImageUrl { get; set; }
+
+    [JsonPropertyName("imageText")]
+    public string? ImageText { get; set; }
 }
 
 public class DNAApiResponseMediumContent

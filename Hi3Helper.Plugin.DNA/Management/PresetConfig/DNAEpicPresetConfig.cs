@@ -1,6 +1,5 @@
 ﻿using Hi3Helper.Plugin.Core.Management;
 using Hi3Helper.Plugin.DNA.Management.Api;
-using Hi3Helper.Plugin.DNA.Utility;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices.Marshalling;
 
@@ -12,13 +11,13 @@ namespace Hi3Helper.Plugin.DNA.Management.PresetConfig;
 [GeneratedComClass]
 public partial class DNAEpicPresetConfig : DNAGlobalPresetConfig
 {
-    private DNAApiResponseDetails ApiResponseDetails = new DNAApiResponseDetails()
+    private readonly DNAApiResponseDetails ApiResponseDetails = new()
     {
         BaseUrls = [
-            "http://pan01-cdn-aws-jp.dna-panstudio.com/",
-            "http://pan01-cdn-ali-jp.dna-panstudio.com/",
-            "http://pan01-cdn-eo-jp.dna-panstudio.com/",
-            "http://pan01-cdn-hs-jp.dna-panstudio.com/",
+            "http://pan01-cdn-aws-jp.dna-panstudio.com",
+            "http://pan01-cdn-ali-jp.dna-panstudio.com",
+            "http://pan01-cdn-eo-jp.dna-panstudio.com",
+            "http://pan01-cdn-hs-jp.dna-panstudio.com",
         ],
         Tag = "PC_OBT_Global_Epic_Pub",
         Region = "Global",

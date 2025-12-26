@@ -104,12 +104,11 @@ internal partial class DNAGlobalLauncherApiNews(DNAApiResponseDetails apiRespons
                         isValid = time > DateTimeOffset.Now;
                     }
                     
-                    return
-                    !string.IsNullOrEmpty(x.Event.Name) &&
-                    !string.IsNullOrEmpty(x.Event.Type) &&
-                    !string.IsNullOrEmpty(x.Event.Date) &&
-                    x.Event.Content != null && x.Event.Content.Count > 0
-                    && isValid;
+                    return !string.IsNullOrEmpty(x.Event.Name)
+                        && !string.IsNullOrEmpty(x.Event.Type)
+                        && !string.IsNullOrEmpty(x.Event.Date)
+                        && x.Event.Content != null && x.Event.Content.Count > 0
+                        && isValid;
                 })];
 
             int entryCount = validEntries.Count;
@@ -186,9 +185,9 @@ internal partial class DNAGlobalLauncherApiNews(DNAApiResponseDetails apiRespons
                         isValid = time > DateTimeOffset.Now;
                     }
 
-                    return !string.IsNullOrEmpty(x.Name) &&
-                            x.Content != null && x.Content.Count > 0 &&
-                            isValid;
+                    return !string.IsNullOrEmpty(x.Name)
+                        && x.Content != null && x.Content.Count > 0
+                        && isValid;
                 })];
 
             int entryCount = validEntries.Count;
@@ -271,22 +270,27 @@ internal partial class DNAGlobalLauncherApiNews(DNAApiResponseDetails apiRespons
                 var content = validEntries[i].Content!
                     .First(x => x.Language != null && x.Language?.Code == LangCode);
 
-                var inlet = content.Inlets!.First();
+                var inlet = content.Inlets!.First(x => x.Type == "1");
 
-                string socialMediaName = validEntries[i].Medium?.Code!;
+                string codeName = validEntries[i].Medium?.Code!;
+                string socialMediaName = inlet.Name!;
                 string clickUrl = inlet.Url!;
 
-                byte[]? iconData = DNAImageData.GetEmbeddedData(socialMediaName);
-                if (iconData == null)
-                {
-                    continue;
-                }
+                byte[]? iconData = DNAImageData.GetEmbeddedData(codeName);
+                iconData ??= DNAImageData.GetEmbeddedData("unknown");
 
                 ref LauncherSocialMediaEntry unmanagedEntry = ref memory[i];
 
                 unmanagedEntry.WriteIcon(iconData);
                 unmanagedEntry.WriteDescription(socialMediaName);
                 unmanagedEntry.WriteClickUrl(clickUrl);
+
+                var qrCode = content.Inlets!.FirstOrDefault(x => x.Type == "0");
+                if (qrCode != null)
+                {
+                    unmanagedEntry.WriteQrImage(qrCode.ImageUrl);
+                    unmanagedEntry.WriteQrImageDescription(qrCode.ImageText);
+                }
             }
 
             isAllocated = true;

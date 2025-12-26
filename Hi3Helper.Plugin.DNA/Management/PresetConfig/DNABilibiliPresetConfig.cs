@@ -1,8 +1,6 @@
 ﻿using Hi3Helper.Plugin.Core.Management;
 using Hi3Helper.Plugin.DNA.Management.Api;
-using Hi3Helper.Plugin.DNA.Utility;
 using System.Diagnostics.CodeAnalysis;
-using System.Net.Security;
 using System.Runtime.InteropServices.Marshalling;
 
 // ReSharper disable IdentifierTypo
@@ -13,7 +11,7 @@ namespace Hi3Helper.Plugin.DNA.Management.PresetConfig;
 [GeneratedComClass]
 public partial class DNABiliBilliPresetConfig : DNAChinaPresetConfig
 {
-    private DNAApiResponseDetails ApiResponseDetails = new DNAApiResponseDetails()
+    private readonly DNAApiResponseDetails ApiResponseDetails = new()
     {
         BaseUrls = [
             "http://pan01-cdn-dna-ali.shyxhy.com",
