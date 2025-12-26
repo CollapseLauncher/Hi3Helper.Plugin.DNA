@@ -33,6 +33,9 @@ public partial class DNAEpicPresetConfig : DNAGlobalPresetConfig
     [field: AllowNull, MaybeNull]
     public override string ZoneFullName => field ??= "Duet Night Abyss (Epic Games)";
 
+    [field: AllowNull, MaybeNull]
+    public override string ZoneHomePageUrl => field ??= "https://store.epicgames.com/en-US/p/duetnightabyss-016366";
+
     public override IGameManager? GameManager
     {
         get => field ??= new DNAGameManager(ExecutableName, ApiResponseDetails, this);

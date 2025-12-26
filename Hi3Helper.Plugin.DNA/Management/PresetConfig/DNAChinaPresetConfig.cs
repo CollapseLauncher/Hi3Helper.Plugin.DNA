@@ -72,24 +72,24 @@ public partial class DNAChinaPresetConfig : DNAPresetConfig
         "《二重螺旋》是英雄游戏旗下潘神工作室自研的一款幻想风多维战斗爽游。\n游戏以「多维武器组合×立体战斗」为核心玩法，以「双视角」讲述「恶魔」的故事。";
 
     [field: AllowNull, MaybeNull]
-    public override string ZoneName => field ??= "China";
+    public override string ZoneName => field ??= "Mainland China";
 
     [field: AllowNull, MaybeNull]
-    public override string ZoneFullName => field ??= "Duet Night Abyss (China)";
+    public override string ZoneFullName => field ??= "Duet Night Abyss (Mainland China)";
 
     [field: AllowNull, MaybeNull]
-    public override string ZoneLogoUrl => field ??= "https://cdnstatic.herogame.com/static/duetnightabyss/4.0/imgs/icon/black-logo-en.png";
+    public override string ZoneLogoUrl => field ??= "https://cdnstatic.yingxiong.com/dna/gw/imgs/icon/black-logo.png";
 
     [field: AllowNull, MaybeNull]
     public override string ZonePosterUrl => field ??= "https://cdnstatic.herogame.com/static/duetnightabyss/4.0/imgs/worldview/pc/2.jpg";
 
     [field: AllowNull, MaybeNull]
-    public override string ZoneHomePageUrl => field ??= "https://duetnightabyss.dna-panstudio.com/";
+    public override string ZoneHomePageUrl => field ??= "https://dna.yingxiong.com/";
 
     public override GameReleaseChannel ReleaseChannel => GameReleaseChannel.Public;
 
     [field: AllowNull, MaybeNull]
-    public override string GameMainLanguage => field ??= "en";
+    public override string GameMainLanguage => field ??= "cn";
 
     [field: AllowNull, MaybeNull]
     public override string LauncherGameDirectoryName => field ??= "DNA Game";

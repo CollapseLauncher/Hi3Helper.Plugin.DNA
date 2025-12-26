@@ -36,6 +36,9 @@ public partial class DNABiliBilliPresetConfig : DNAChinaPresetConfig
     [field: AllowNull, MaybeNull]
     public override string ZoneFullName => field ??= "Duet Night Abyss (Bilibili)";
 
+    [field: AllowNull, MaybeNull]
+    public override string ZoneHomePageUrl => field ??= "https://www.biligame.com/detail/?id=111799";
+
     public override IGameManager? GameManager
     {
         get => field ??= new DNAGameManager(ExecutableName, ApiResponseDetails, this);
