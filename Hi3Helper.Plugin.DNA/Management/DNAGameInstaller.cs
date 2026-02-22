@@ -16,12 +16,12 @@ using System.Threading.Tasks;
 namespace Hi3Helper.Plugin.DNA.Management;
 
 [GeneratedComClass]
-internal partial class DNAGameInstaller(IGameManager? gameManager, DNAApiResponseDetails apiResponseDetails) : GameInstallerBase(gameManager)
+internal partial class DNAGameInstaller : GameInstallerBase
 {
-    private HttpClient _downloadHttpClient = DNAUtility.CreateApiHttpClient();
-    private DNAGameManager? _gameManager = gameManager as DNAGameManager;
+    private readonly HttpClient _downloadHttpClient = DNAUtility.CreateApiHttpClient();
+    private DNAGameManager? _gameManager;
 
-    private string? _baseVersionUrl = $"{apiResponseDetails.BaseUrl}/Packages/{apiResponseDetails.Region}/WindowsNoEditor/{apiResponseDetails.Tag}/";
+    private string? _baseVersionUrl = null;
     private const string _baseVersion = "BaseVersion.json";
 
     private string? _gamePath = null;
@@ -29,6 +29,12 @@ internal partial class DNAGameInstaller(IGameManager? gameManager, DNAApiRespons
     private DNAApiResponseVersion? _apiVersion;
     private DNAFilesVersion? _installVersion;
     private DNAApiResponseVersion? _tempVersion;
+
+    public DNAGameInstaller(IGameManager? gameManager, DNAApiResponseDetails apiResponseDetails) : base(gameManager)
+    {
+        _gameManager = gameManager as DNAGameManager;
+        _baseVersionUrl = $"{apiResponseDetails.BaseUrl}/Packages/{apiResponseDetails.Region}/WindowsNoEditor/{apiResponseDetails.Tag}/{_gameManager?.ApiResponseVersion}/";
+    }
 
     protected override async Task<int> InitAsync(CancellationToken token)
     {

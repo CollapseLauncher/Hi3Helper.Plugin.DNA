@@ -55,6 +55,8 @@ internal partial class DNAGameManager : GameManagerBase
     protected override string ApiResponseBaseUrl { get; }
     protected DNAApiResponseDetails ApiResponseDetails { get; }
 
+    public string ApiResponseVersion { get; private set; } = "1";
+
     private string CurrentGameExecutableByPreset { get; }
 
     private DNAPresetConfig Preset { get; }
@@ -116,13 +118,22 @@ internal partial class DNAGameManager : GameManagerBase
         if (!forceInit && IsInitialized)
             return 0;
 
-        var apiUrl = $"{ApiResponseDetails.BaseUrl}/Packages/{ApiResponseDetails.Region}/WindowsNoEditor/{ApiResponseDetails.Tag}/BaseVersion.json";
+        var apiUrl = $"{ApiResponseDetails.BaseUrl}/Packages/{ApiResponseDetails.Region}/WindowsNoEditor/{ApiResponseDetails.Tag}/PackageBaseVersion.txt";
+
+        using HttpResponseMessage packageVersionResponse =
+            await ApiResponseHttpClient.GetAsync(apiUrl, HttpCompletionOption.ResponseHeadersRead, token);
+        packageVersionResponse.EnsureSuccessStatusCode();
+
+        ApiResponseVersion = await packageVersionResponse.Content.ReadAsStringAsync(token);
+        ApiGameVersion = new GameVersion($"{ApiResponseVersion}.0.0");
+
+        var apiVersionUrl = $"{ApiResponseDetails.BaseUrl}/Packages/{ApiResponseDetails.Region}/WindowsNoEditor/{ApiResponseDetails.Tag}/{ApiResponseVersion}/BaseVersion.json";
 
         using HttpResponseMessage versionResponse =
-            await ApiResponseHttpClient.GetAsync(apiUrl, HttpCompletionOption.ResponseHeadersRead, token);
+            await ApiResponseHttpClient.GetAsync(apiVersionUrl, HttpCompletionOption.ResponseHeadersRead, token);
         versionResponse.EnsureSuccessStatusCode();
 
-        string jsonResponse = await versionResponse.Content.ReadAsStringAsync();
+        string jsonResponse = await versionResponse.Content.ReadAsStringAsync(token);
         ApiVersion = JsonSerializer.Deserialize(jsonResponse, DNAApiResponseContext.Default.DNAApiResponseVersion);
         ApiGameVersion = new GameVersion(ApiVersion?.GameVersionList.First().Key);
 

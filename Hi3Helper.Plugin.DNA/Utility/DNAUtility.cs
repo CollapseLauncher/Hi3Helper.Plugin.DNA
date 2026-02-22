@@ -79,6 +79,7 @@ internal static class DNAUtility
         "zh-tw" => "TC",
         "ja-jp" => "JP",
         "ko-kr" => "KR",
+        "fr-fr" => "FR",
         _ => "EN",
     };
 }
