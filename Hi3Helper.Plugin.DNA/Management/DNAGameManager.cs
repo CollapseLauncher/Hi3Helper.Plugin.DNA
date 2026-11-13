@@ -63,6 +63,7 @@ internal partial class DNAGameManager : GameManagerBase
 
     internal string? GameResourceBaseUrl { get; set; }
     internal string? GameResourceBasisPath { get; set; }
+
     internal bool IsInitialized { get; set; }
 
     protected override bool HasPreload => false;

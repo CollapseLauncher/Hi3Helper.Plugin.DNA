@@ -97,7 +97,7 @@ public partial class DNAChinaPresetConfig : DNAPresetConfig
 
     public override ILauncherApiMedia? LauncherApiMedia
     {
-        get => field ??= new DNAGlobalLauncherApiMedia(ApiResponseDetails, ZoneLogoUrl, BackgroundUrl);
+        get => field ??= new DNAGlobalLauncherApiMedia(ApiResponseDetails, ZoneLogoUrl, BackgroundUrl, SteamDataUrl);
         set;
     }
 

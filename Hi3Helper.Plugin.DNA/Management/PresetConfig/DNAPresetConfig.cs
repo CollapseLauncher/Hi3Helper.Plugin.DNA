@@ -11,5 +11,7 @@ public abstract partial class DNAPresetConfig : PluginPresetConfigBase
 {
     public abstract string? StartExecutableName { get; }
 
-    protected const string BackgroundUrl = "https://video.yingxiong.com/fhd/696d50aea66d49d9af0cf2fda53d9186.mp4";
+    protected const string BackgroundUrl = "https://cdnstatic.yingxiong.com/dna_hd_1_7/imgs/home/pc/bg.webp";
+
+    protected const string SteamDataUrl = "https://store.steampowered.com/api/appdetails?appids=3950020&l=";
 }
