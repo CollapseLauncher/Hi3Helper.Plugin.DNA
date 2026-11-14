@@ -6,7 +6,6 @@ using Hi3Helper.Plugin.DNA.Utility;
 using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text.Json;
@@ -21,75 +20,55 @@ internal partial class DNAGameInstaller : GameInstallerBase
     private readonly HttpClient _downloadHttpClient = DNAUtility.CreateApiHttpClient();
     private DNAGameManager? _gameManager;
 
-    private string? _baseVersionUrl = null;
-    private const string _baseVersion = "BaseVersion.json";
-
     private string? _gamePath = null;
-    
-    private DNAApiResponseVersion? _apiVersion;
-    private DNAFilesVersion? _installVersion;
-    private DNAApiResponseVersion? _tempVersion;
+
+    private const int _downloadThreads = 6;
+    private const long _blockSize = 1024L;
+
+    private const string _tempPath = "TempPath\\TempGameFiles";
+    private const string _downloadVersionName = "DownloadVersion.json";
+    private DNAFilesDownloadVersion? DownloadVersion = null;
+
+    private DNAApiResponseHdiffInfo? HdiffInfo = null;
+
+    private const string _gameVersionName = "GameVersion.json";
 
     public DNAGameInstaller(IGameManager? gameManager, DNAApiDetails apiResponseDetails) : base(gameManager)
     {
         _gameManager = gameManager as DNAGameManager;
-        _baseVersionUrl = $"{apiResponseDetails.BaseUrl}/Packages/{apiResponseDetails.Region}/WindowsNoEditor/{apiResponseDetails.Tag}/{_gameManager?.ApiResponseVersion}/";
     }
 
     protected override async Task<int> InitAsync(CancellationToken token)
     {
         GameManager.GetGamePath(out _gamePath);
 
-        // Attempt to download API BaseVersion
+        // Attempt to parse existing installation process
         try
         {
-            using HttpResponseMessage versionResponse =
-            await _downloadHttpClient.GetAsync(_baseVersionUrl + _baseVersion, HttpCompletionOption.ResponseHeadersRead, token);
-            versionResponse.EnsureSuccessStatusCode();
-
-            string jsonResponse = await versionResponse.Content.ReadAsStringAsync(token);
-            _apiVersion = JsonSerializer.Deserialize(jsonResponse, DNAApiResponseContext.Default.DNAApiResponseVersion);
-            SharedStatic.InstanceLogger.LogDebug("[DNAGameInstaller::InitAsync] Downloaded BaseVersion.json");
-        }
-        catch (Exception ex)
-        {
-            SharedStatic.InstanceLogger.LogWarning("[DNAGameInstaller::InitAsync] Failed to get API BaseVersion.json: {Err}", ex.Message);
-            _apiVersion = null;
-        }
-
-        // Attempt to parse Install BaseVersion
-        try
-        {
-            var jsonPath = Path.Combine(_gamePath!, _baseVersion);
-            if (Path.Exists(jsonPath))
+            var dlVerPath = Path.Combine(_gamePath!, _tempPath, _downloadVersionName);
+            if (Path.Exists(dlVerPath))
             {
-                using var jsonResponse = File.OpenRead(jsonPath);
-                _installVersion = JsonSerializer.Deserialize(jsonResponse, DNAFilesContext.Default.DNAFilesVersion);
-                SharedStatic.InstanceLogger.LogDebug("[DNAGameInstaller::InitAsync] Deserialized Install BaseVersion.json");
+                using var dlVerResponse = File.OpenRead(dlVerPath);
+                DownloadVersion = JsonSerializer.Deserialize(dlVerResponse, DNAFilesContext.Default.DNAFilesDownloadVersion);
+                SharedStatic.InstanceLogger.LogDebug("[DNAGameInstaller::InitAsync] Deserialized DownloadVersion.json");
             }
         }
         catch (Exception ex)
         {
-            SharedStatic.InstanceLogger.LogWarning("[DNAGameInstaller::InitAsync] Failed to deserialize Install BaseVersion: {Err}", ex.Message);
-            _installVersion = null;
+            SharedStatic.InstanceLogger.LogWarning("[DNAGameInstaller::InitAsync] Failed to deserialize DownloadVersion: {Err}", ex.Message);
+            DownloadVersion = null;
         }
 
-        // Attempt to parse Temp BaseVersion 
-        try
-        {
-            var jsonPath = Path.Combine(_gamePath!, "TempPath", _baseVersion);
-            if (Path.Exists(jsonPath))
-            {
-                using var jsonResponse = File.OpenRead(jsonPath);
-                _tempVersion = JsonSerializer.Deserialize(jsonResponse, DNAApiResponseContext.Default.DNAApiResponseVersion);
-                SharedStatic.InstanceLogger.LogDebug("[DNAGameInstaller::InitAsync] Deserialized Temp BaseVersion.json");
-            }
-        }
-        catch (Exception ex)
-        {
-            SharedStatic.InstanceLogger.LogWarning("[DNAGameInstaller::InitAsync] Failed to deserialize Temp BaseVersion: {Err}", ex.Message);
-            _tempVersion = null;
-        }
+        // Get information about file to download
+        var hdiffInfoUrl = _gameManager!.ApiDetails.GetHdiffInfoUrl(
+            _gameManager.VersionManifest!.LatestVersionNumber!,
+            _gameManager.VersionManifest!.LatestVersion!,
+            _gameManager.GameVersion?.Version);
+        using HttpResponseMessage hdiffInfoResponse = await _downloadHttpClient.GetAsync(, HttpCompletionOption.ResponseHeadersRead, token);
+        hdiffInfoResponse.EnsureSuccessStatusCode();
+
+        string jsonResponse = await hdiffInfoResponse.Content.ReadAsStringAsync(token);
+        HdiffInfo = JsonSerializer.Deserialize(jsonResponse, DNAApiResponseContext.Default.DNAApiResponseHdiffInfo);
 
         return 0;
     }
@@ -101,7 +80,7 @@ internal partial class DNAGameInstaller : GameInstallerBase
 
     protected override async Task<long> GetGameDownloadedSizeAsyncInner(GameInstallerKind gameInstallerKind, CancellationToken token)
     {
-        if (_apiVersion == null)
+        if (HdiffInfo == null)
             return 0L;
 
         await InitAsync(token).ConfigureAwait(false);
@@ -120,25 +99,22 @@ internal partial class DNAGameInstaller : GameInstallerBase
         if (string.IsNullOrEmpty(_gamePath))
             return 0L;
 
-        if (_apiVersion == null)
+        if (HdiffInfo?.HdiffFile == null)
             return 0L;
 
-        (var missingFiles, var filesToDelete) = VersionUtils.FindMissingFiles(_apiVersion.FilesList, _installVersion?.FilesList, _tempVersion?.FilesList);
-
-        var filteredFiles = missingFiles.Where(x => !filesToDelete.Contains(x.Key));
-
-        // Check main files
-        var tempPath = Path.Combine(_gamePath, "TempPath", "TempGameFiles");
+        var tempPath = Path.Combine(_gamePath, _tempPath);
         var downloadedSize = 0L;
-        foreach (var files in filteredFiles)
+        for (int i = 0; i < _downloadThreads; i++)
         {
-            var filePath = Path.Combine(tempPath, files.Key);
+            var filePath = Path.Combine(tempPath, $"{HdiffInfo.HdiffFile.Name}.seg{i}");
 
             try
             {
                 var fi = new FileInfo(filePath);
                 downloadedSize += fi.Length;
+#if DEBUG
                 SharedStatic.InstanceLogger.LogTrace("[DNAGameInstaller::CalculateDownloadedBytesAsync] Counted existing file {File} len={Len}", filePath, fi.Length);
+#endif
             }
             catch (Exception ex)
             {
@@ -154,30 +130,18 @@ internal partial class DNAGameInstaller : GameInstallerBase
         if (gameInstallerKind is GameInstallerKind.None or GameInstallerKind.Preload)
             return 0;
 
-        if (_apiVersion == null || _apiVersion.GameVersionList.Count == 0)
+        if (HdiffInfo?.HdiffFile == null)
         {
-            SharedStatic.InstanceLogger.LogDebug("[DNAGameInstaller::GetGameSizeAsyncInner] Version list empty or null");
+            SharedStatic.InstanceLogger.LogWarning("[DNAGameInstaller::GetGameSizeAsyncInner] No information about the download exist");
             return 0L;
         }
 
-        (var missingFiles, _) = VersionUtils.FindMissingFiles(_apiVersion.FilesList, _installVersion?.FilesList, _tempVersion?.FilesList);
+#if DEBUG
+        SharedStatic.InstanceLogger.LogWarning("[DNAGameInstaller::GetGameSizeAsyncInner] Download size: {DS} / Final size: {FS}",
+            HdiffInfo.HdiffFile.Size, HdiffInfo.NewSize);
+#endif
 
-        try
-        {
-            long total = 0;
-            foreach ((_, var file) in missingFiles)
-            {
-                total = unchecked(total + file.Size);
-            }
-
-            SharedStatic.InstanceLogger.LogDebug("[DNAGameInstaller::GetGameSizeAsyncInner] Computed total size: {Total}", total);
-            return total;
-        }
-        catch (Exception ex)
-        {
-            SharedStatic.InstanceLogger.LogWarning("[WuwaGameInstaller::GetGameSizeAsyncInner] Error computing total size: {Err}", ex.Message);
-            return 0L;
-        }
+        return HdiffInfo.HdiffFile.Size ?? 0L;
     }
 
     private int GetDownloadedCountAsync(GameInstallerKind install, CancellationToken token)
@@ -185,26 +149,31 @@ internal partial class DNAGameInstaller : GameInstallerBase
         if (install is GameInstallerKind.None or GameInstallerKind.Preload)
             return 0;
 
-        if (_apiVersion is null)
+        if (HdiffInfo?.HdiffFile == null)
         {
-            SharedStatic.InstanceLogger.LogError("[DNAGameInstaller::StartInstallAsyncInner] _apiVersion is null, aborting.");
-            throw new InvalidOperationException("BaseVersion from API is not initialized.");
+            SharedStatic.InstanceLogger.LogError("[DNAGameInstaller::StartInstallAsyncInner] HdiffFile is null, aborting.");
+            throw new InvalidOperationException("No information about download package.");
         }
 
-        (var missingFiles, _) = VersionUtils.FindMissingFiles(_apiVersion.FilesList, _installVersion?.FilesList, _tempVersion?.FilesList);
+        var file = HdiffInfo.HdiffFile;
 
-        var tempPath = Path.Combine(_gamePath!, "TempPath", "TempGameFiles");
+        var tempPath = Path.Combine(_gamePath!, _tempPath);
         if (!Directory.Exists(tempPath))
             return 0;
 
+
+        long segmentSize = (file.Size!.Value / (_downloadThreads * _blockSize) * _blockSize);
+        long lastSegmentSize = file.Size!.Value - ((_downloadThreads - 1) * segmentSize);
+
         var totalDownloaded = 0;
-        foreach ((var fileName, var fileDetails) in missingFiles)
+        for (int i = 0; i < _downloadThreads; i++)
         {
-            var filePath = Path.Combine(tempPath, fileName);
+            var filePath = Path.Combine(tempPath, $"{HdiffInfo.HdiffFile.Name}.seg{i}");
             if (File.Exists(filePath))
             {
                 var existingSize = new FileInfo(filePath).Length;
-                if (existingSize == fileDetails.Size)
+                if ((i < _downloadThreads - 1 && existingSize == segmentSize) ||
+                    (i == _downloadThreads - 1 && existingSize == segmentSize))
                     totalDownloaded++;
             }
         }
