@@ -25,7 +25,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Hi3Helper.Plugin.Core\Hi3Helper.Plugin.Core.csproj" />
-    <ProjectReference Include="..\SevenZipExtractor\SevenZipExtractor\SevenZipExtractor.csproj" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='DebugNoReflection'">

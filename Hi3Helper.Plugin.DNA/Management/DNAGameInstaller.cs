@@ -64,7 +64,7 @@ internal partial class DNAGameInstaller : GameInstallerBase
             _gameManager.VersionManifest!.LatestVersionNumber!,
             _gameManager.VersionManifest!.LatestVersion!,
             _gameManager.GameVersion?.Version);
-        using HttpResponseMessage hdiffInfoResponse = await _downloadHttpClient.GetAsync(, HttpCompletionOption.ResponseHeadersRead, token);
+        using HttpResponseMessage hdiffInfoResponse = await _downloadHttpClient.GetAsync(hdiffInfoUrl, HttpCompletionOption.ResponseHeadersRead, token);
         hdiffInfoResponse.EnsureSuccessStatusCode();
 
         string jsonResponse = await hdiffInfoResponse.Content.ReadAsStringAsync(token);

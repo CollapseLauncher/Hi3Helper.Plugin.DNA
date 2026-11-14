@@ -44,6 +44,13 @@ public class DNAApiDetails
 
         return $"{BaseUrl}/Packages/{Region}/WindowsNoEditor/{Tag}/{versionNumber}/{latestVersion}/{diffTag}/{fileName}";
     }
+
+    public string GetHdiffFileName(string versionNumber, string latestVersion, string? currentVersion = null)
+    {
+        var diffTag = GetDiffTag(currentVersion, latestVersion);
+
+        return $"{versionNumber}/{latestVersion}/{diffTag}";
+    }
     #endregion
 
     #region Media URLs
