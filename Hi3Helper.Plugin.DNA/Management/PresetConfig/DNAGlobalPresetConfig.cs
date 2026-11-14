@@ -16,7 +16,7 @@ namespace Hi3Helper.Plugin.DNA.Management.PresetConfig;
 [GeneratedComClass]
 public partial class DNAGlobalPresetConfig : DNAPresetConfig
 {
-    private readonly DNAApiResponseDetails ApiResponseDetails = new()
+    public override DNAApiDetails ApiResponseDetails { get; } = new()
     {
         BaseUrls = [
             "http://pan01-cdn-aws-jp.dna-panstudio.com",
@@ -98,13 +98,13 @@ public partial class DNAGlobalPresetConfig : DNAPresetConfig
 
     public override ILauncherApiMedia? LauncherApiMedia
     {
-        get => field ??= new DNAGlobalLauncherApiMedia(ApiResponseDetails, ZoneLogoUrl, BackgroundUrl, SteamDataUrl);
+        get => field ??= new DNAGlobalLauncherApiMedia(this);
         set;
     }
 
     public override ILauncherApiNews? LauncherApiNews
     {
-        get => field ??= new DNAGlobalLauncherApiNews(ApiResponseDetails);
+        get => field ??= new DNAGlobalLauncherApiNews(this);
         set;
     }
 
@@ -122,6 +122,7 @@ public partial class DNAGlobalPresetConfig : DNAPresetConfig
 
     protected override Task<int> InitAsync(CancellationToken token)
     {
+
         return Task.FromResult(0);
     }
 }

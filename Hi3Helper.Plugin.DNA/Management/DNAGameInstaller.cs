@@ -30,7 +30,7 @@ internal partial class DNAGameInstaller : GameInstallerBase
     private DNAFilesVersion? _installVersion;
     private DNAApiResponseVersion? _tempVersion;
 
-    public DNAGameInstaller(IGameManager? gameManager, DNAApiResponseDetails apiResponseDetails) : base(gameManager)
+    public DNAGameInstaller(IGameManager? gameManager, DNAApiDetails apiResponseDetails) : base(gameManager)
     {
         _gameManager = gameManager as DNAGameManager;
         _baseVersionUrl = $"{apiResponseDetails.BaseUrl}/Packages/{apiResponseDetails.Region}/WindowsNoEditor/{apiResponseDetails.Tag}/{_gameManager?.ApiResponseVersion}/";

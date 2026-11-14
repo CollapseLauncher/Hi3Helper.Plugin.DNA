@@ -7,5 +7,5 @@ namespace Hi3Helper.Plugin.DNA.Management.Api;
 [JsonSerializable(typeof(DNAApiResponseCarousel))]
 [JsonSerializable(typeof(DNAApiResponsePatches))]
 [JsonSerializable(typeof(DNAApiResponseVersion))]
-[JsonSerializable(typeof(DNAApiResponseSteam))]
+[JsonSerializable(typeof(DNAApiResponseVersionManifest))]
 public partial class DNAApiResponseContext : JsonSerializerContext;

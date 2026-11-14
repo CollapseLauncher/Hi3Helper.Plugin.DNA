@@ -82,14 +82,4 @@ internal static class DNAUtility
         "fr-fr" => "FR",
         _ => "EN",
     };
-
-    internal static string GetSteamLangFromLauncherLocale() => SharedStatic.PluginLocaleCode switch
-    {
-        "zh-cn" => "schinese",
-        "zh-tw" => "tchinese",
-        "ja-jp" => "japanese",
-        "ko-kr" => "korean",
-        "fr-fr" => "french",
-        _ => "english",
-    };
 }

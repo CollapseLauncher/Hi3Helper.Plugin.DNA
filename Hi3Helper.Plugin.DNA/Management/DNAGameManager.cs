@@ -29,7 +29,7 @@ internal partial class DNAGameManager : GameManagerBase
 {
     internal DNAGameManager(
         string gameExecutableNameByPreset,
-        DNAApiResponseDetails details,
+        DNAApiDetails details,
         DNAPresetConfig preset)
     {
         CurrentGameExecutableByPreset = gameExecutableNameByPreset;
@@ -53,7 +53,7 @@ internal partial class DNAGameManager : GameManagerBase
     }
 
     protected override string ApiResponseBaseUrl { get; }
-    protected DNAApiResponseDetails ApiResponseDetails { get; }
+    protected DNAApiDetails ApiResponseDetails { get; }
 
     public string ApiResponseVersion { get; private set; } = "1";
 

@@ -1,6 +1,7 @@
 ﻿using Hi3Helper.Plugin.Core;
 using Hi3Helper.Plugin.Core.Management.Api;
 using Hi3Helper.Plugin.Core.Utility;
+using Hi3Helper.Plugin.DNA.Management.PresetConfig;
 using Hi3Helper.Plugin.DNA.Utility;
 using Microsoft.Extensions.Logging;
 using System;
@@ -17,10 +18,8 @@ using System.Threading.Tasks;
 namespace Hi3Helper.Plugin.DNA.Management.Api;
 
 [GeneratedComClass]
-internal partial class DNAGlobalLauncherApiMedia(DNAApiResponseDetails apiResponseDetails, string logoUrl, string backgroundUrl, string steamUrl) : LauncherApiMediaBase
+internal partial class DNAGlobalLauncherApiMedia(DNAPresetConfig presetConfig) : LauncherApiMediaBase
 {
-    private DNAApiResponseSteamData? steamData = null;
-
     [field: AllowNull, MaybeNull]
     protected override HttpClient ApiResponseHttpClient
     {
@@ -35,14 +34,14 @@ internal partial class DNAGlobalLauncherApiMedia(DNAApiResponseDetails apiRespon
         set;
     }
 
-    protected override string ApiResponseBaseUrl { get; } = apiResponseDetails.BaseUrl;
+    private DNAApiDetails ApiDetails { get; } = presetConfig.ApiResponseDetails;
 
-    protected string LogoUrl { get; } = logoUrl;
-    protected string BackgroundUrl { get; } = backgroundUrl;
+    protected string LogoUrl { get; } = presetConfig.ZoneLogoUrl;
+    protected string BackgroundUrl { get; private set; } = presetConfig.DefaultBackgroundUrl;
 
     public override unsafe void GetBackgroundEntries(out nint handle, out int count, out bool isDisposable, out bool isAllocated)
     {
-        if (BackgroundUrl == null && (steamData?.Screenshots == null || steamData?.Screenshots?.Count == 0))
+        if (BackgroundUrl == null)
         {
             isDisposable = false;
             handle = nint.Zero;
@@ -51,27 +50,14 @@ internal partial class DNAGlobalLauncherApiMedia(DNAApiResponseDetails apiRespon
             return;
         }
 
-        var totalCount = steamData?.Screenshots?.Count ?? 1;
-
         using (ThisInstanceLock.EnterScope())
         {
-            PluginDisposableMemory<LauncherPathEntry> backgroundEntries = PluginDisposableMemory<LauncherPathEntry>.Alloc(totalCount);
+            PluginDisposableMemory<LauncherPathEntry> backgroundEntries = PluginDisposableMemory<LauncherPathEntry>.Alloc(1);
 
             try
             {
-                if (steamData?.Screenshots != null && steamData?.Screenshots?.Count > 0)
-                {
-                    for (int i = 0; i < steamData?.Screenshots.Count; i++)
-                    {
-                        ref LauncherPathEntry entry = ref backgroundEntries[i];
-                        entry.Write(steamData.Screenshots[i].PathFull, []);
-                    }
-                }
-                else
-                {
-                    ref LauncherPathEntry entry = ref backgroundEntries[0];
-                    entry.Write(BackgroundUrl, []);      
-                }
+                ref LauncherPathEntry entry = ref backgroundEntries[0];
+                entry.Write(BackgroundUrl, []);      
 
                 isAllocated = true;
             }
@@ -102,26 +88,25 @@ internal partial class DNAGlobalLauncherApiMedia(DNAApiResponseDetails apiRespon
     {
         try
         {
-            var apiSteamUrl = $"{steamUrl}{DNAUtility.GetSteamLangFromLauncherLocale()}";
-            SharedStatic.InstanceLogger.LogTrace("[DNAGlobalLauncherApiMedia::InitAsync] Steam Url is {Url}", apiSteamUrl);
+            var manifestUrl = ApiDetails.GetVersionManifestUrl();
+            SharedStatic.InstanceLogger.LogTrace("[DNAGlobalLauncherApiMedia::InitAsync] Manifest Url is {Url}", manifestUrl);
 
-            using HttpResponseMessage steamResponse =
-                await ApiResponseHttpClient.GetAsync(apiSteamUrl, HttpCompletionOption.ResponseHeadersRead, token);
-            steamResponse.EnsureSuccessStatusCode();
+            using HttpResponseMessage manifestResponse =
+                await ApiResponseHttpClient.GetAsync(manifestUrl, HttpCompletionOption.ResponseHeadersRead, token);
+            manifestResponse.EnsureSuccessStatusCode();
 
-            string jsonSteamResponse = await steamResponse.Content.ReadAsStringAsync(token);
+            string jsonResponse = await manifestResponse.Content.ReadAsStringAsync(token);
 
-            var apiResponseSteam = JsonSerializer.Deserialize(jsonSteamResponse, DNAApiResponseContext.Default.DNAApiResponseSteam);
+            var apiResponse = JsonSerializer.Deserialize(jsonResponse, DNAApiResponseContext.Default.DNAApiResponseVersionManifest);
 
-            steamData = apiResponseSteam?["3950020"].Data;
+            BackgroundUrl = DNAApiDetails.GetBackgroundUrl(apiResponse!.LatestVersionNumber!);
 
-            SharedStatic.InstanceLogger.LogTrace("[DNAGlobalLauncherApiMedia::InitAsync] Was it able to read Steam data? Header: {Header}", steamData?.HeaderImage);
+            SharedStatic.InstanceLogger.LogTrace("[DNAGlobalLauncherApiMedia::InitAsync] Background Url is {Url}", BackgroundUrl);
         }
         catch (Exception ex)
         {
-            SharedStatic.InstanceLogger.LogTrace("[DNAGlobalLauncherApiMedia::InitAsync] Failed to read Steam data. Ex: {Message}", ex.Message);
+            SharedStatic.InstanceLogger.LogTrace("[DNAGlobalLauncherApiMedia::InitAsync] Failed to obtain background url. Ex: {Message}", ex.Message);
         }
-
         return 0;
     }
 

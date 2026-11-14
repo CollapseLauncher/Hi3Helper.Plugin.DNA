@@ -16,11 +16,10 @@ namespace Hi3Helper.Plugin.DNA.Management.PresetConfig;
 [GeneratedComClass]
 public partial class DNAChinaPresetConfig : DNAPresetConfig
 {
-    private readonly DNAApiResponseDetails ApiResponseDetails = new()
+    public override DNAApiDetails ApiResponseDetails { get; } = new()
     {
         BaseUrls = [
             "http://pan01-cdn-dna-ali.shyxhy.com",
-            "http://pan01-cdn-dna-aws.shyxhy.com",
             "http://pan01-1-eo.shyxhy.com",
             "http://pan01-1-hs.shyxhy.com"
         ],
@@ -97,13 +96,13 @@ public partial class DNAChinaPresetConfig : DNAPresetConfig
 
     public override ILauncherApiMedia? LauncherApiMedia
     {
-        get => field ??= new DNAGlobalLauncherApiMedia(ApiResponseDetails, ZoneLogoUrl, BackgroundUrl, SteamDataUrl);
+        get => field ??= new DNAGlobalLauncherApiMedia(this);
         set;
     }
 
     public override ILauncherApiNews? LauncherApiNews
     {
-        get => field ??= new DNAGlobalLauncherApiNews(ApiResponseDetails, "CN");
+        get => field ??= new DNAGlobalLauncherApiNews(this, "CN");
         set;
     }
 
