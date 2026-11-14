@@ -29,7 +29,7 @@ internal static class DNAUtility
     internal static PluginHttpClientBuilder CreateApiHttpClientBuilder(bool useCompression = true)
     {
         PluginHttpClientBuilder builder = new PluginHttpClientBuilder()
-            .SetUserAgent($"EMLauncher/++UE4+Release-4.27-CL-0 Windows/10.0.26100.1.768.64bit");
+            .SetUserAgent($"EMLauncher/++UE4+Release-4.27-CL-0 Windows/10.0.26200.1.256.64bit");
 
         if (!useCompression)
         {
