@@ -2,6 +2,7 @@
 using Hi3Helper.Plugin.Core.Management;
 using Hi3Helper.Plugin.Core.Utility;
 using Hi3Helper.Plugin.DNA.Management.FileStructs;
+using Hi3Helper.Plugin.DNA.Utility;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -18,7 +19,7 @@ internal partial class DNAGameInstaller : GameInstallerBase
 {
     protected bool _canSkipDelete => File.Exists(Path.Combine(_gamePath!, "@NoDelete"));
     protected bool _canSkipVerif => File.Exists(Path.Combine(_gamePath!, "@NoVerification"));
-    protected bool _canSkipExtract => File.Exists(Path.Combine(_gamePath!, "@NoExtraction"));
+    protected bool _canSkipPatch => File.Exists(Path.Combine(_gamePath!, "@NoPatch"));
 
     protected override async Task StartInstallAsyncInner(InstallProgressDelegate? progressDelegate, InstallProgressStateDelegate? progressStateDelegate, CancellationToken token)
     {
@@ -44,20 +45,6 @@ internal partial class DNAGameInstaller : GameInstallerBase
         var tempJsonPath = Path.Combine(tempPath, _downloadVersionName);
         await WriteDownloadVersionJson(tempJsonPath);
 
-        // 0. Set Initial State
-        InstallProgress installProgress = new()
-        {
-            StateCount = 0,
-            TotalStateToComplete = _downloadThreads,
-            DownloadedCount = GetDownloadedCountAsync(GameInstallerKind.Install, token),
-            TotalCountToDownload = _downloadThreads,
-            DownloadedBytes = await GetGameDownloadedSizeAsyncInner(GameInstallerKind.Install, token),
-            TotalBytesToDownload = await GetGameSizeAsyncInner(GameInstallerKind.Install, token)
-        };
-
-        progressDelegate?.Invoke(in installProgress);
-        progressStateDelegate?.Invoke(InstallProgressState.Download);
-
         var fileSize = HdiffInfo.HdiffFile.Size!.Value;
 
         var segmentFiles = Enumerable.Range(0, _downloadThreads)
@@ -68,20 +55,40 @@ internal partial class DNAGameInstaller : GameInstallerBase
             ? fileSize - ((_downloadThreads - 1) * (fileSize / (_downloadThreads * _blockSize) * _blockSize))
             : fileSize / (_downloadThreads * _blockSize) * _blockSize)).ToList();
 
+
         var hdiffUrl = _gameManager!.ApiDetails.GetHdiffFileUrl(
             _gameManager!.VersionManifest!.LatestVersionNumber!,
             _gameManager!.VersionManifest!.LatestVersion!,
             HdiffInfo.HdiffFile.Name!,
             _gameVersion);
 
+        var hdiffPath = Path.Combine(tempPath, HdiffInfo.HdiffFile.Name!);
+
+
         // Head request for file (optional but launcher does it)
         var headRequest = new HttpRequestMessage(HttpMethod.Head, hdiffUrl);
         var headResponse = await _downloadHttpClient.SendAsync(headRequest, HttpCompletionOption.ResponseHeadersRead, token);
         headResponse.EnsureSuccessStatusCode();
 
+
+        InstallProgress installProgress = new();
+
         int retries = 0;
         while (true)
         {
+            // 0. Set Initial State
+            installProgress = new()
+            {
+                StateCount = 0,
+                TotalStateToComplete = _downloadThreads,
+                DownloadedCount = GetDownloadedCountAsync(GameInstallerKind.Install, token),
+                TotalCountToDownload = _downloadThreads,
+                DownloadedBytes = await GetGameDownloadedSizeAsyncInner(GameInstallerKind.Install, token),
+                TotalBytesToDownload = await GetGameSizeAsyncInner(GameInstallerKind.Install, token)
+            };
+            progressDelegate?.Invoke(in installProgress);
+            progressStateDelegate?.Invoke(InstallProgressState.Download);
+
             // 1. File Download
             await Parallel.ForEachAsync(segmentFiles, new ParallelOptions
             {
@@ -89,52 +96,27 @@ internal partial class DNAGameInstaller : GameInstallerBase
                 CancellationToken = token
             }, DownloadImpl);
 
-            // 2. File Verification
-            installProgress.StateCount = 0;
-            installProgress.DownloadedCount = 0;
-            installProgress.DownloadedBytes = 0;
-            progressDelegate?.Invoke(in installProgress);
-            progressStateDelegate?.Invoke(InstallProgressState.Verify);
+            // 2. File Merge
+            await MergeSegments();
 
-            // #### await MergeAndVerify .hdiff ####
-
-            retries++;
-
-            if (retries >= 5)
-            {
-                throw new Exception("Exceeded amount of allowed retries.");
-            }
+            // 3. File Verification
+            await VerifyFile();
 
             if (installProgress.DownloadedCount == _downloadThreads)
                 break;
 
-            progressDelegate?.Invoke(in installProgress);
-            progressStateDelegate?.Invoke(InstallProgressState.Download);
+            retries++;
+            if (retries >= 5)
+                throw new Exception("Exceeded amount of allowed retries.");
         }
 
-        // 3. Game File Patching
-        installProgress.StateCount = 0;
-        installProgress.DownloadedCount = 0;
-        installProgress.DownloadedBytes = 0;
-        progressDelegate?.Invoke(in installProgress);
-        progressStateDelegate?.Invoke(InstallProgressState.Install);
+        // 4. Game File Patching
+        await PatchFiles();
 
-        // #### await Hdiff extraction ####
+        // 5. File Cleanup
+        await CleanupFiles(true);
 
-        // 4. File Cleanup
-        foreach ((var fileName, _, _) in segmentFiles)
-        {
-            if (_canSkipDelete) break;
-
-            var filePath = Path.Combine(tempPath, fileName);
-            FileInfo fileInfo = new(filePath);
-            if (fileInfo.Exists)
-            {
-                fileInfo.Delete();
-            }
-        }
-
-        // 5. Finalize installation - Write BaseVersion.json
+        // 6. Finalize installation - Write BaseVersion.json
         var mainJsonPath = Path.Combine(_gamePath!, _gameVersionName);
         await WriteGameVersionJson(mainJsonPath);
 
@@ -216,15 +198,101 @@ internal partial class DNAGameInstaller : GameInstallerBase
         }
         #endregion
 
-        #region Subroutine - File Verification
-        async Task VerifyFiles()
+        #region Subroutine - Merge Segments & File Verification
+        async Task MergeSegments()
+        {
+            installProgress.StateCount = 0;
+            installProgress.DownloadedCount = 0;
+            installProgress.DownloadedBytes = 0;
+            progressDelegate?.Invoke(in installProgress);
+            progressStateDelegate?.Invoke(InstallProgressState.Reconciling);
+
+            if (File.Exists(hdiffPath))
+                File.Delete(hdiffPath);
+           
+            await using var output = File.Create(hdiffPath);
+
+            foreach ((var segment, _, var size) in segmentFiles)
+            {
+                using var input = File.OpenRead(segment);
+                await input.CopyToAsync(output, token);
+
+                installProgress.StateCount += 1;
+                installProgress.DownloadedCount += 1;
+                installProgress.DownloadedBytes += size;
+                progressDelegate?.Invoke(in installProgress);
+                progressStateDelegate?.Invoke(InstallProgressState.Reconciling);
+            }
+        }
+
+        async Task VerifyFile()
         {
             if (_canSkipVerif) return;
+
+            installProgress.StateCount = 0;
+            installProgress.TotalStateToComplete = 1;
+            installProgress.DownloadedCount = 0;
+            installProgress.DownloadedBytes = 0;
+            progressDelegate?.Invoke(in installProgress);
+            progressStateDelegate?.Invoke(InstallProgressState.Verify);
+
+            using var input = File.OpenRead(hdiffPath);
+            var fileMd5 = await HashUtils.ComputeMd5HexAsync(input, (o) =>
+            {
+                Interlocked.Add(ref installProgress.DownloadedBytes, o);
+                progressDelegate?.Invoke(in installProgress);
+                progressStateDelegate?.Invoke(InstallProgressState.Verify);
+            }, token);
+
+            if (fileMd5 != null && fileMd5 != HdiffInfo.HdiffFile.MD5)
+            {
+                await CleanupFiles();
+            }
             
             Interlocked.Increment(ref installProgress.DownloadedCount);
             Interlocked.Increment(ref installProgress.StateCount);
             progressDelegate?.Invoke(in installProgress);
             progressStateDelegate?.Invoke(InstallProgressState.Verify);
+        }
+        #endregion
+
+        #region Subroutine - Patch Files
+        async Task PatchFiles()
+        {
+            if (_canSkipPatch)
+                return;
+
+            installProgress.StateCount = 0;
+            installProgress.DownloadedCount = 0;
+            installProgress.DownloadedBytes = 0;
+            progressDelegate?.Invoke(in installProgress);
+            progressStateDelegate?.Invoke(InstallProgressState.Install);
+        }
+        #endregion
+
+        #region Subroutine - File Cleanup
+        async Task CleanupFiles(bool deleteDownloadVersion = false)
+        {
+            foreach ((var fileName, _, _) in segmentFiles)
+            {
+                if (_canSkipDelete) break;
+
+                var filePath = Path.Combine(tempPath, fileName);
+                if (File.Exists(filePath))
+                {
+                    File.Delete(filePath);
+                }
+            }
+
+            if (File.Exists(hdiffPath))
+            {
+                File.Delete(hdiffPath);
+            }
+
+            if (deleteDownloadVersion)
+            {
+                File.Delete(tempJsonPath);
+            }
         }
         #endregion
     }
