@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Hi3Helper.Plugin.DNA.Utility;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -47,6 +48,12 @@ public class DNAApiDetails
 
     #region Media URLs
     public static string GetBackgroundUrl(string versionNumber) => $"https://cdnstatic.yingxiong.com/dna_hd_{versionNumber.Replace(".","_")}/imgs/home/pc/bg.webp";
+
+    public string GetOverlayUrl()
+    {
+        string lang = Region == "CN" ? "chs" : DNAUtility.GetOverlayLangFromLauncherLocale();
+        return $"https://cdnstatic.yingxiong.com/dna_hd_1_7/imgs/home/pc/slogan-{lang}.webp";
+    }
 
     public string GetNoticesUrl() => $"{BaseUrl}/OperationLauncherNotice/OperationLauncherNoticeProduction{RegionLong}online.json";
 

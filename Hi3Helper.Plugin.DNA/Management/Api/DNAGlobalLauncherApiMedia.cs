@@ -36,7 +36,7 @@ internal partial class DNAGlobalLauncherApiMedia(DNAPresetConfig presetConfig) :
 
     private DNAApiDetails ApiDetails { get; } = presetConfig.ApiResponseDetails;
 
-    protected string LogoUrl { get; } = presetConfig.ZoneLogoUrl;
+    protected string LogoUrl { get; } = presetConfig.ApiResponseDetails.GetOverlayUrl();
     protected string BackgroundUrl { get; private set; } = presetConfig.DefaultBackgroundUrl;
 
     public override unsafe void GetBackgroundEntries(out nint handle, out int count, out bool isDisposable, out bool isAllocated)
@@ -49,6 +49,8 @@ internal partial class DNAGlobalLauncherApiMedia(DNAPresetConfig presetConfig) :
             isAllocated = false;
             return;
         }
+
+        SharedStatic.InstanceLogger.LogTrace("[DNAGlobalLauncherApiMedia::GetBackgroundEntries] Background Url is {Url}", BackgroundUrl);
 
         using (ThisInstanceLock.EnterScope())
         {
@@ -76,13 +78,44 @@ internal partial class DNAGlobalLauncherApiMedia(DNAPresetConfig presetConfig) :
         handle = nint.Zero;
         count = 0;
         isAllocated = false;
+        return;
+
+        /*if (LogoUrl == null)
+        {
+            isDisposable = false;
+            handle = nint.Zero;
+            count = 0;
+            isAllocated = false;
+            return;
+        }
+
+        SharedStatic.InstanceLogger.LogTrace("[DNAGlobalLauncherApiMedia::GetLogoOverlayEntries] Logo Overlay Url is {Url}", LogoUrl);
+
+        using (ThisInstanceLock.EnterScope())
+        {
+            PluginDisposableMemory<LauncherPathEntry> backgroundEntries = PluginDisposableMemory<LauncherPathEntry>.Alloc(1);
+
+            try
+            {
+                ref LauncherPathEntry entry = ref backgroundEntries[0];
+                entry.Write(LogoUrl, []);
+
+                isAllocated = true;
+            }
+            finally
+            {
+                isDisposable = backgroundEntries.IsDisposable == 1;
+                handle = backgroundEntries.AsSafePointer();
+                count = backgroundEntries.Length;
+            }
+        }*/
     }
 
     public override void GetBackgroundFlag(out LauncherBackgroundFlag result)
         => result = LauncherBackgroundFlag.TypeIsImage | LauncherBackgroundFlag.IsSourceFile;
 
     public override void GetLogoFlag(out LauncherBackgroundFlag result)
-        => result = LauncherBackgroundFlag.None;
+        => result = LauncherBackgroundFlag.None /* LauncherBackgroundFlag.TypeIsImage | LauncherBackgroundFlag.IsSourceFile */;
 
     protected override async Task<int> InitAsync(CancellationToken token)
     {
@@ -105,8 +138,10 @@ internal partial class DNAGlobalLauncherApiMedia(DNAPresetConfig presetConfig) :
         }
         catch (Exception ex)
         {
-            SharedStatic.InstanceLogger.LogTrace("[DNAGlobalLauncherApiMedia::InitAsync] Failed to obtain background url. Ex: {Message}", ex.Message);
+            SharedStatic.InstanceLogger.LogTrace("[DNAGlobalLauncherApiMedia::InitAsync] Failed to obtain Background Url. Ex: {Message}", ex.Message);
+            return -1;
         }
+
         return 0;
     }
 

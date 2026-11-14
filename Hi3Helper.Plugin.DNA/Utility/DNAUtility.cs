@@ -82,4 +82,13 @@ internal static class DNAUtility
         "fr-fr" => "FR",
         _ => "EN",
     };
+
+    internal static string GetOverlayLangFromLauncherLocale() => SharedStatic.PluginLocaleCode switch
+    {
+        "zh-cn" => "chs",
+        "zh-tw" => "cht",
+        "ja-jp" => "jp",
+        "ko-kr" => "kr",
+        _ => "en",
+    };
 }
