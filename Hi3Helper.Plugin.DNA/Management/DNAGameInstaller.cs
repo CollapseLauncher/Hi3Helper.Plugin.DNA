@@ -21,6 +21,7 @@ internal partial class DNAGameInstaller : GameInstallerBase
     private DNAGameManager? _gameManager;
 
     private string? _gamePath = null;
+    private string? _gameVersion = null;
 
     private const int _downloadThreads = 6;
     private const long _blockSize = 1024L;
@@ -59,11 +60,26 @@ internal partial class DNAGameInstaller : GameInstallerBase
             DownloadVersion = null;
         }
 
+        _gameVersion = _gameManager!.GameVersion?.Version;
+        if (_gameVersion != null)
+        {
+            long gameVer = long.Parse(_gameVersion);
+            long minVer = long.Parse(_gameManager!.VersionManifest!.MinSupportedVersion!);
+
+            if (gameVer < minVer)
+            {
+                _gameVersion = null;
+#if DEBUG
+                SharedStatic.InstanceLogger.LogWarning("[DNAGameInstaller::InitAsync] Game version is too old to be updated, downloading full package.");
+#endif
+            }
+        }
+
         // Get information about file to download
         var hdiffInfoUrl = _gameManager!.ApiDetails.GetHdiffInfoUrl(
             _gameManager.VersionManifest!.LatestVersionNumber!,
             _gameManager.VersionManifest!.LatestVersion!,
-            _gameManager.GameVersion?.Version);
+            _gameVersion);
         using HttpResponseMessage hdiffInfoResponse = await _downloadHttpClient.GetAsync(hdiffInfoUrl, HttpCompletionOption.ResponseHeadersRead, token);
         hdiffInfoResponse.EnsureSuccessStatusCode();
 

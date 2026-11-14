@@ -1,9 +1,7 @@
 ﻿using Hi3Helper.Plugin.Core;
 using Hi3Helper.Plugin.Core.Management;
 using Hi3Helper.Plugin.Core.Utility;
-using Hi3Helper.Plugin.DNA.Management.Api;
 using Hi3Helper.Plugin.DNA.Management.FileStructs;
-using Hi3Helper.Plugin.DNA.Utility;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
@@ -60,15 +58,36 @@ internal partial class DNAGameInstaller : GameInstallerBase
         progressDelegate?.Invoke(in installProgress);
         progressStateDelegate?.Invoke(InstallProgressState.Download);
 
-        var files = Enumerable.Range(0, _downloadThreads)
-            .Select(i => Path.Combine(tempPath, $"{HdiffInfo.HdiffFile.Name}.seg{i}"))
-            .ToList();
+        var fileSize = HdiffInfo.HdiffFile.Size!.Value;
+
+        var segmentFiles = Enumerable.Range(0, _downloadThreads)
+            .Select(i => (
+            outputName: Path.Combine(tempPath, $"{HdiffInfo.HdiffFile.Name}.seg{i}"),
+            offset: i * (fileSize / (_downloadThreads * _blockSize) * _blockSize),
+            expectedSize: i == _downloadThreads - 1
+            ? fileSize - ((_downloadThreads - 1) * (fileSize / (_downloadThreads * _blockSize) * _blockSize))
+            : fileSize / (_downloadThreads * _blockSize) * _blockSize)).ToList();
+
+        var hdiffUrl = _gameManager!.ApiDetails.GetHdiffFileUrl(
+            _gameManager!.VersionManifest!.LatestVersionNumber!,
+            _gameManager!.VersionManifest!.LatestVersion!,
+            HdiffInfo.HdiffFile.Name!,
+            _gameVersion);
+
+        // Head request for file (optional but launcher does it)
+        var headRequest = new HttpRequestMessage(HttpMethod.Head, hdiffUrl);
+        var headResponse = await _downloadHttpClient.SendAsync(headRequest, HttpCompletionOption.ResponseHeadersRead, token);
+        headResponse.EnsureSuccessStatusCode();
 
         int retries = 0;
         while (true)
         {
             // 1. File Download
-            await DownloadFiles();
+            await Parallel.ForEachAsync(segmentFiles, new ParallelOptions
+            {
+                MaxDegreeOfParallelism = _downloadThreads,
+                CancellationToken = token
+            }, DownloadImpl);
 
             // 2. File Verification
             installProgress.StateCount = 0;
@@ -103,7 +122,7 @@ internal partial class DNAGameInstaller : GameInstallerBase
         // #### await Hdiff extraction ####
 
         // 4. File Cleanup
-        foreach (var fileName in files)
+        foreach ((var fileName, _, _) in segmentFiles)
         {
             if (_canSkipDelete) break;
 
@@ -127,9 +146,9 @@ internal partial class DNAGameInstaller : GameInstallerBase
         return;
 
         #region Subroutine - File Download
-        async Task DownloadFiles()
+        async ValueTask DownloadImpl((string outputName, long offset, long expectedSize) t, CancellationToken token)
         {
-            var filePath = Path.Combine(tempPath);
+            var filePath = Path.Combine(tempPath, t.outputName);
             FileInfo fileInfo = new(filePath);
             fileInfo.Directory?.Create();
 
@@ -140,16 +159,9 @@ internal partial class DNAGameInstaller : GameInstallerBase
 
             await using FileStream fileStream = fileInfo.Open(FileMode.Append, FileAccess.Write, FileShare.Write);
 
-            string assetDownloadUrl = "";
-
 #if DEBUG
-            SharedStatic.InstanceLogger.LogTrace("Trying to download the asset from URL: {AssetUrl}", assetDownloadUrl);
+            SharedStatic.InstanceLogger.LogTrace("Trying to download {outputName} at offset {Offset}", t.outputName, t.offset);
 #endif
-            // Head request for file (optional but launcher does it)
-            var headRequest = new HttpRequestMessage(HttpMethod.Head, assetDownloadUrl);
-            var headResponse = await _downloadHttpClient.SendAsync(headRequest, HttpCompletionOption.ResponseHeadersRead, token);
-            headResponse.EnsureSuccessStatusCode();
-
             long existingLength = 0;
             if (fileStream.CanSeek)
             {
@@ -157,17 +169,12 @@ internal partial class DNAGameInstaller : GameInstallerBase
                 fileStream.Seek(existingLength, SeekOrigin.Begin);
             }
 
+#if DEBUG
             if (existingLength >= 0)
             {
-#if DEBUG
-                SharedStatic.InstanceLogger.LogTrace("Already downloaded asset from URL: {AssetUrl}", assetDownloadUrl);
-#endif
-                Interlocked.Increment(ref installProgress.StateCount);
-                Interlocked.Increment(ref installProgress.DownloadedCount);
-                progressDelegate?.Invoke(in installProgress);
-                progressStateDelegate?.Invoke(InstallProgressState.Download);
-                return;
+                SharedStatic.InstanceLogger.LogTrace("Already downloaded {bytes} bytes of {outputName}", existingLength, t.outputName);
             }
+#endif
 
             // Use Retry-able Copy-To Stream task to start the download
             await using RetryableCopyToStreamTask downloadTask = RetryableCopyToStreamTask
@@ -175,10 +182,12 @@ internal partial class DNAGameInstaller : GameInstallerBase
                     {
                         // Start from existing file size (or retry position)
                         long startPos = existingLength + pos;
+                        long endPos = t.offset + t.expectedSize;
+
                         return _downloadHttpClient.CreateHttpBridgedStream(
-                            assetDownloadUrl,
+                            hdiffUrl,
                             startPos,
-                            null,
+                            endPos,
                             thisCtx);
                     },
                     fileStream,
@@ -202,10 +211,10 @@ internal partial class DNAGameInstaller : GameInstallerBase
             progressStateDelegate?.Invoke(InstallProgressState.Download);
 
 #if DEBUG
-            SharedStatic.InstanceLogger.LogTrace("Downloaded asset from URL: {AssetUrl}", assetDownloadUrl);
+            SharedStatic.InstanceLogger.LogTrace("Downloaded {Segment} at offset {Offset}", t.outputName, t.offset);
 #endif
         }
-#endregion
+        #endregion
 
         #region Subroutine - File Verification
         async Task VerifyFiles()
@@ -233,13 +242,13 @@ internal partial class DNAGameInstaller : GameInstallerBase
         var fileVersion = _gameManager?.ApiDetails.GetHdiffFileName(
             _gameManager.VersionManifest!.LatestVersionNumber!,
             _gameManager.VersionManifest!.LatestVersion!,
-            _gameManager.GameVersion?.Version);
+            _gameVersion);
             
         var downloadVersion = new DNAFilesDownloadVersion()
         {
             Version = fileVersion,
             MD5 = HdiffInfo.HdiffFile.MD5,
-            IsFullPatch = _gameManager?.GameVersion?.Version != null
+            IsFullPatch = _gameVersion != null
         };
 
         await JsonSerializer.SerializeAsync(output, downloadVersion, DNAFilesContext.Default.DNAFilesDownloadVersion);
