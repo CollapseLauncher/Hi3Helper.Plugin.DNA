@@ -41,7 +41,7 @@ public partial class DNABiliBilliPresetConfig : DNAChinaPresetConfig
 
     public override IGameManager? GameManager
     {
-        get => field ??= new DNAGameManager(ExecutableName, ApiResponseDetails, this);
+        get => field ??= new DNAGameManager(ExecutableName, this);
         set;
     }
 

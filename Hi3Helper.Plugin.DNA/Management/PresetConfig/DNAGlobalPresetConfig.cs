@@ -110,7 +110,7 @@ public partial class DNAGlobalPresetConfig : DNAPresetConfig
 
     public override IGameManager? GameManager
     {
-        get => field ??= new DNAGameManager(ExecutableName, ApiResponseDetails, this);
+        get => field ??= new DNAGameManager(ExecutableName, this);
         set;
     }
 
