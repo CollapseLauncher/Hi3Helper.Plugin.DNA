@@ -4,8 +4,9 @@ using Hi3Helper.Plugin.Core.Utility;
 using Hi3Helper.Plugin.DNA.Management.FileStructs;
 using Hi3Helper.Plugin.DNA.Utility;
 using Microsoft.Extensions.Logging;
+using SharpHPatchZ;
+using SharpHPatchZ.Header;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
@@ -263,10 +264,32 @@ internal partial class DNAGameInstaller : GameInstallerBase
                 return;
 
             installProgress.StateCount = 0;
+            installProgress.TotalStateToComplete = 1;
             installProgress.DownloadedCount = 0;
             installProgress.DownloadedBytes = 0;
             progressDelegate?.Invoke(in installProgress);
             progressStateDelegate?.Invoke(InstallProgressState.Install);
+
+            using HDiffInfo info = HPatch.CreateInstance(hdiffPath);
+           
+            PatchResult patchResult = HPatch.Patch(info, _tempPath, _gamePath, _gamePath, progressCallback: UpdateProgress, token: token);
+
+            if (!patchResult)
+                throw patchResult.Exception ?? new Exception();
+
+            installProgress.StateCount = 1;
+            progressDelegate?.Invoke(in installProgress);
+            progressStateDelegate?.Invoke(InstallProgressState.Install);
+
+            return;
+
+            void UpdateProgress(long totalProcessed, long totalSize, int written)
+            {
+                Interlocked.Exchange(ref installProgress.DownloadedBytes, totalProcessed);
+                Interlocked.Exchange(ref installProgress.TotalBytesToDownload, totalSize);
+                progressDelegate?.Invoke(in installProgress);
+                progressStateDelegate?.Invoke(InstallProgressState.Install);
+            }
         }
         #endregion
 

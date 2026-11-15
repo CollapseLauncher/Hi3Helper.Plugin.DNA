@@ -24,11 +24,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="SharpHDiffPatch.Core" Version="2.4.2" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\Hi3Helper.Plugin.Core\Hi3Helper.Plugin.Core.csproj" />
+    <ProjectReference Include="..\SharpHDiffPatch.Core\SharpHPatchZ\SharpHPatchZ.csproj" />
   </ItemGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='DebugNoReflection'">
