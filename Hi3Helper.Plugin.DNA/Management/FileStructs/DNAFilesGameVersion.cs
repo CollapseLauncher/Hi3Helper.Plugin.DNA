@@ -8,5 +8,5 @@ namespace Hi3Helper.Plugin.DNA.Management.FileStructs;
 public class DNAFilesGameVersion
 {
     [JsonPropertyName("version")]
-    public string? Version { get; set; } = null!;
+    public int? Version { get; set; } = null!;
 }

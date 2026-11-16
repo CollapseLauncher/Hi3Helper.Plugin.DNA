@@ -38,10 +38,10 @@ public partial class DNAGlobalPresetConfig : DNAPresetConfig
     public override string GameName => "Duet Night Abyss";
 
     [field: AllowNull, MaybeNull]
-    public override string GameExecutableName => field ??= Path.Combine("EM", "Binaries", "Win64", EngineExecutableName);
+    public override string GameExecutableName => field ??= Path.Combine("DNA Game", "EM", "Binaries", "Win64", EngineExecutableName);
     
     [field: AllowNull, MaybeNull]
-    public override string StartExecutableName => field ??= ExecutableName;
+    public override string StartExecutableName => field ??= Path.Combine("DNA Game", ExecutableName);
 
     public override string GameAppDataPath { 
         get
@@ -50,7 +50,7 @@ public partial class DNAGlobalPresetConfig : DNAPresetConfig
             GameManager?.GetGamePath(out path);
             if (path == null)
                 return string.Empty;
-            return Path.Combine(path, "EM", "Saved");
+            return Path.Combine(path, "DNA Game", "EM", "Saved");
         }
     }
 

@@ -1,15 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.12.12405.243 stable
+VisualStudioVersion = 18.12.12405.243
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hi3Helper.Plugin.DNA", "Hi3Helper.Plugin.DNA\Hi3Helper.Plugin.DNA.csproj", "{BA302F46-E800-4F4F-B8DA-29939160448D}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hi3Helper.Plugin.Core", "Hi3Helper.Plugin.Core\Hi3Helper.Plugin.Core.csproj", "{6D56B964-1509-482F-4589-C780CDE5C703}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PluginTest", "Hi3Helper.Plugin.Core\PluginTest\PluginTest.csproj", "{9E58C55F-9D8C-F9CB-F23A-11E336C9D51D}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharpHPatchZ", "SharpHDiffPatch.Core\SharpHPatchZ\SharpHPatchZ.csproj", "{C449549E-80BD-608A-2473-9D57B970A625}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -43,14 +41,6 @@ Global
 		{9E58C55F-9D8C-F9CB-F23A-11E336C9D51D}.Release|x64.Build.0 = Release|x64
 		{9E58C55F-9D8C-F9CB-F23A-11E336C9D51D}.ReleaseNoReflection|x64.ActiveCfg = ReleaseNoReflection|x64
 		{9E58C55F-9D8C-F9CB-F23A-11E336C9D51D}.ReleaseNoReflection|x64.Build.0 = ReleaseNoReflection|x64
-		{C449549E-80BD-608A-2473-9D57B970A625}.Debug|x64.ActiveCfg = Debug|x64
-		{C449549E-80BD-608A-2473-9D57B970A625}.Debug|x64.Build.0 = Debug|x64
-		{C449549E-80BD-608A-2473-9D57B970A625}.DebugNoReflection|x64.ActiveCfg = Debug|x64
-		{C449549E-80BD-608A-2473-9D57B970A625}.DebugNoReflection|x64.Build.0 = Debug|x64
-		{C449549E-80BD-608A-2473-9D57B970A625}.Release|x64.ActiveCfg = Release|x64
-		{C449549E-80BD-608A-2473-9D57B970A625}.Release|x64.Build.0 = Release|x64
-		{C449549E-80BD-608A-2473-9D57B970A625}.ReleaseNoReflection|x64.ActiveCfg = Release|x64
-		{C449549E-80BD-608A-2473-9D57B970A625}.ReleaseNoReflection|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

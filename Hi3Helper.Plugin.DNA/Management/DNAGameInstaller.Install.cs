@@ -4,9 +4,8 @@ using Hi3Helper.Plugin.Core.Utility;
 using Hi3Helper.Plugin.DNA.Management.FileStructs;
 using Hi3Helper.Plugin.DNA.Utility;
 using Microsoft.Extensions.Logging;
-using SharpHPatchZ;
-using SharpHPatchZ.Header;
 using System;
+using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
 using System.Text.Json;
@@ -109,7 +108,7 @@ internal partial class DNAGameInstaller : GameInstallerBase
         }
 
         // 6. Finalize installation - Write GameVersion.json
-        var mainJsonPath = Path.Combine(_gamePath!, _gameVersionName);
+        var mainJsonPath = Path.Combine(_gamePath!, "DNA Game", _gameVersionName);
         await WriteGameVersionJson(mainJsonPath);
 
         _gameManager!.GetApiGameVersion(out GameVersion apiVersion);
@@ -228,35 +227,61 @@ internal partial class DNAGameInstaller : GameInstallerBase
         #region Subroutine - Patch Files
         async Task PatchFiles()
         {
-            if (_canSkipPatch)
-                return;
+            if (_canSkipPatch) return;
+
+            var finalSize = HdiffInfo.NewSize!.Value;
 
             installProgress.StateCount = 0;
             installProgress.TotalStateToComplete = 1;
             installProgress.DownloadedCount = 0;
             installProgress.DownloadedBytes = 0;
+            installProgress.TotalBytesToDownload = finalSize;
             progressDelegate?.Invoke(in installProgress);
             progressStateDelegate?.Invoke(InstallProgressState.Install);
 
-            using HDiffInfo info = HPatch.CreateInstance(hdiffPath);
-           
-            PatchResult patchResult = HPatch.Patch(info, _tempPath, _gamePath, _gamePath, progressCallback: UpdateProgress, token: token);
+            var pluginPath = DNAUtility.FindPluginPath()!;
+            var hpatchzPath = Path.Combine(pluginPath, "Lib", "hpatchz.exe");
 
-            if (!patchResult)
-                throw patchResult.Exception ?? new Exception();
+            var psi = new ProcessStartInfo
+            {
+                FileName = hpatchzPath,
+                UseShellExecute = false,
+                CreateNoWindow = true,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true
+            };
+
+            var currentPath = Path.Combine(_gamePath, "DNA Game");
+            var patchedPath = Path.Combine(_gamePath, "patched");
+            if (Directory.Exists(patchedPath))
+            {
+                Directory.Delete(patchedPath, true);
+            }
+
+            var gamePath = _gameVersion == null ? "" : currentPath;
+
+            psi.ArgumentList.Add("-f");        // Force Patch
+            psi.ArgumentList.Add(gamePath);    // Old Path    
+            psi.ArgumentList.Add(hdiffPath);   // Hdiff Path
+            psi.ArgumentList.Add(patchedPath); // New Path
+
+            await DNAUtility.RunHPatchZAsync(psi, finalSize, patchedPath, (o) =>
+            {
+                Interlocked.Add(ref installProgress.DownloadedBytes, o);
+                progressDelegate?.Invoke(in installProgress);
+            }, token);
+
+            if (Directory.Exists(currentPath))
+            {
+                Directory.Delete(currentPath, true);
+            }
+            Directory.Move(patchedPath, currentPath);
 
             installProgress.StateCount = 1;
             progressDelegate?.Invoke(in installProgress);
             progressStateDelegate?.Invoke(InstallProgressState.Install);
 
             return;
-
-            void UpdateProgress(long totalProcessed, long totalSize, int written)
-            {
-                Interlocked.Exchange(ref installProgress.DownloadedBytes, totalProcessed);
-                Interlocked.Exchange(ref installProgress.TotalBytesToDownload, totalSize);
-                progressDelegate?.Invoke(in installProgress);
-            }
         }
         #endregion
     }
@@ -273,7 +298,7 @@ internal partial class DNAGameInstaller : GameInstallerBase
 
         var gameVersion = new DNAFilesGameVersion()
         {
-            Version = _gameManager!.VersionManifest!.LatestVersion!
+            Version = int.Parse(_gameManager!.VersionManifest!.LatestVersion!)
         };
 
         await JsonSerializer.SerializeAsync(output, gameVersion, DNAFilesContext.Default.DNAFilesGameVersion);

@@ -72,9 +72,9 @@ internal partial class DNAGameManager : GameManagerBase
         get
         {
             string executablePath1 =
-                Path.Combine(CurrentGameInstallPath ?? string.Empty, CurrentGameExecutableByPreset);
-            string executablePath2 = Path.Combine(CurrentGameInstallPath ?? string.Empty, "EM/Binaries/Win64/EM-Win64-Shipping.exe");
-            string executablePath3 = Path.Combine(CurrentGameInstallPath ?? string.Empty, "EM.exe");
+                Path.Combine(CurrentGameInstallPath ?? string.Empty, "DNA Game", CurrentGameExecutableByPreset);
+            string executablePath2 = Path.Combine(CurrentGameInstallPath ?? string.Empty, "DNA Game\\EM\\Binaries\\Win64\\EM-Win64-Shipping.exe");
+            string executablePath3 = Path.Combine(CurrentGameInstallPath ?? string.Empty, "DNA Game\\EM.exe");
             return File.Exists(executablePath1) && File.Exists(executablePath2) && File.Exists(executablePath3);
         }
     }
@@ -169,7 +169,7 @@ internal partial class DNAGameManager : GameManagerBase
 #if DEBUG
                 SharedStatic.InstanceLogger.LogTrace("[DNAGameManager::FindExistingInstallPathAsyncInner] Found game executable at {Path}", expectedExe);
 #endif
-                return Path.GetDirectoryName(expectedExe);
+                return launcherDir;
             }
 
             return null;
@@ -184,13 +184,14 @@ internal partial class DNAGameManager : GameManagerBase
             return;
         }
 
-        string filePath = Path.Combine(CurrentGameInstallPath, "GameVersion.json");
+        var gameFolder = Path.Combine(CurrentGameInstallPath, "DNA Game");
+        var filePath = Path.Combine(gameFolder, "GameVersion.json");
         FileInfo fileInfo = new(filePath);
 
         if (!fileInfo.Exists)
         {
             SharedStatic.InstanceLogger.LogWarning("[DNAGameManager::LoadConfig] File GameVersion.json doesn't exist on dir: {Dir}",
-                CurrentGameInstallPath);
+                gameFolder);
             return;
         }
 
@@ -202,7 +203,7 @@ internal partial class DNAGameManager : GameManagerBase
             CurrentGameVersion = new GameVersion($"{GameVersion?.Version}.0.0");
 
             SharedStatic.InstanceLogger.LogTrace("[DNAGameManager::LoadConfig] Loaded GameVersion.json ({Version}) from directory: {Dir}",
-                GameVersion?.Version, CurrentGameInstallPath);
+                GameVersion?.Version, gameFolder);
         }
         catch (Exception ex)
         {

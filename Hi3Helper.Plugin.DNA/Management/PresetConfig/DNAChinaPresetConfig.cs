@@ -37,10 +37,10 @@ public partial class DNAChinaPresetConfig : DNAPresetConfig
     public override string GameName => "Duet Night Abyss";
 
     [field: AllowNull, MaybeNull]
-    public override string GameExecutableName => field ??= Path.Combine("EM", "Binaries", "Win64", EngineExecutableName);
+    public override string GameExecutableName => field ??= Path.Combine("DNA Game", "EM", "Binaries", "Win64", EngineExecutableName);
     
     [field: AllowNull, MaybeNull]
-    public override string StartExecutableName => field ??= ExecutableName;
+    public override string StartExecutableName => field ??= Path.Combine("DNA Game", ExecutableName);
 
     public override string GameAppDataPath { 
         get
