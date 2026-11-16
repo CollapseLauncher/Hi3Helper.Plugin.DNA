@@ -22,9 +22,7 @@ internal partial class DNAGameInstaller : GameInstallerBase
 
     private string? _gamePath = null;
     private string? _gameVersion = null;
-
-    private const int _downloadThreads = 6;
-    private const long _blockSize = 1024L;
+    private const long _blockSize = 1024 << 10;
 
     private const string _tempPath = "TempPath\\TempGameFiles";
     private const string _downloadVersionName = "DownloadVersion.json";
@@ -120,22 +118,19 @@ internal partial class DNAGameInstaller : GameInstallerBase
 
         var tempPath = Path.Combine(_gamePath, _tempPath);
         var downloadedSize = 0L;
-        for (int i = 0; i < _downloadThreads; i++)
-        {
-            var filePath = Path.Combine(tempPath, $"{HdiffInfo.HdiffFile.Name}.seg{i}");
 
-            try
-            {
-                var fi = new FileInfo(filePath);
-                downloadedSize += fi.Length;
+        var filePath = Path.Combine(tempPath, HdiffInfo.HdiffFile.Name!);
+        try
+        {
+            var fi = new FileInfo(filePath);
+            downloadedSize += fi.Length;
 #if DEBUG
-                SharedStatic.InstanceLogger.LogTrace("[DNAGameInstaller::CalculateDownloadedBytesAsync] Counted existing file {File} len={Len}", filePath, fi.Length);
+            SharedStatic.InstanceLogger.LogTrace("[DNAGameInstaller::CalculateDownloadedBytesAsync] Counted existing file {File} len={Len}", filePath, fi.Length);
 #endif
-            }
-            catch (Exception ex)
-            {
-                SharedStatic.InstanceLogger.LogWarning("[DNAGameInstaller::CalculateDownloadedBytesAsync] Error reading file info {File}: {Err}", filePath, ex.Message);
-            }
+        }
+        catch (Exception ex)
+        {
+            SharedStatic.InstanceLogger.LogWarning("[DNAGameInstaller::CalculateDownloadedBytesAsync] Error reading file info {File}: {Err}", filePath, ex.Message);
         }
 
         return downloadedSize;
@@ -177,21 +172,14 @@ internal partial class DNAGameInstaller : GameInstallerBase
         if (!Directory.Exists(tempPath))
             return 0;
 
-
-        long segmentSize = (file.Size!.Value / (_downloadThreads * _blockSize) * _blockSize);
-        long lastSegmentSize = file.Size!.Value - ((_downloadThreads - 1) * segmentSize);
-
         var totalDownloaded = 0;
-        for (int i = 0; i < _downloadThreads; i++)
+
+        var filePath = Path.Combine(tempPath, HdiffInfo.HdiffFile.Name!);
+        if (File.Exists(filePath))
         {
-            var filePath = Path.Combine(tempPath, $"{HdiffInfo.HdiffFile.Name}.seg{i}");
-            if (File.Exists(filePath))
-            {
-                var existingSize = new FileInfo(filePath).Length;
-                if ((i < _downloadThreads - 1 && existingSize == segmentSize) ||
-                    (i == _downloadThreads - 1 && existingSize == segmentSize))
-                    totalDownloaded++;
-            }
+            var fileSize = new FileInfo(filePath).Length;
+            if (fileSize == file.Size)
+                totalDownloaded++;
         }
 
         return totalDownloaded;
