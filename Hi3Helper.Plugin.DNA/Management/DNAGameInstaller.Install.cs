@@ -211,7 +211,6 @@ internal partial class DNAGameInstaller : GameInstallerBase
             {
                 Interlocked.Add(ref installProgress.DownloadedBytes, o);
                 progressDelegate?.Invoke(in installProgress);
-                progressStateDelegate?.Invoke(InstallProgressState.Verify);
             }, token);
 
             if (fileMd5 != null && fileMd5 != HdiffInfo.HdiffFile.MD5)
@@ -257,7 +256,6 @@ internal partial class DNAGameInstaller : GameInstallerBase
                 Interlocked.Exchange(ref installProgress.DownloadedBytes, totalProcessed);
                 Interlocked.Exchange(ref installProgress.TotalBytesToDownload, totalSize);
                 progressDelegate?.Invoke(in installProgress);
-                progressStateDelegate?.Invoke(InstallProgressState.Install);
             }
         }
         #endregion
