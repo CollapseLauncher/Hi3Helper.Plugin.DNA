@@ -10,7 +10,6 @@ using Microsoft.Win32;
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Runtime.InteropServices.Marshalling;
 using System.Text.Json;
@@ -29,12 +28,10 @@ internal partial class DNAGameManager : GameManagerBase
 {
     internal DNAGameManager(
         string gameExecutableNameByPreset,
-        DNAApiResponseDetails details,
         DNAPresetConfig preset)
     {
         CurrentGameExecutableByPreset = gameExecutableNameByPreset;
-        ApiResponseBaseUrl = details.BaseUrl;
-        ApiResponseDetails = details;
+        ApiDetails = preset.ApiResponseDetails;
         Preset = preset;
     }
 
@@ -52,31 +49,32 @@ internal partial class DNAGameManager : GameManagerBase
         set;
     }
 
-    protected override string ApiResponseBaseUrl { get; }
-    protected DNAApiResponseDetails ApiResponseDetails { get; }
-
-    public string ApiResponseVersion { get; private set; } = "1";
-
-    private string CurrentGameExecutableByPreset { get; }
-
     private DNAPresetConfig Preset { get; }
 
-    internal string? GameResourceBaseUrl { get; set; }
-    internal string? GameResourceBasisPath { get; set; }
+    public DNAApiDetails ApiDetails { get; }
+
+    private string CurrentGameExecutableByPreset { get; }
+    
     internal bool IsInitialized { get; set; }
 
+    protected override GameVersion ApiGameVersion { get; set; }
+    protected override GameVersion CurrentGameVersion { get; set; }
+
     protected override bool HasPreload => false;
-    protected override bool HasUpdate => IsInstalled && InstalledVersion != null && ApiVersion != null
-        && VersionUtils.CheckUpdate(ApiVersion.FilesList, InstalledVersion.FilesList);
+    protected override bool HasUpdate => IsInstalled && ApiGameVersion != CurrentGameVersion;
+
+    public DNAApiResponseVersionManifest? VersionManifest { get; private set; } = null;
+    public DNAFilesGameVersion? GameVersion { get; private set; } = null;
+    public DNAFilesDownloadVersion? DownloadVersion { get; private set; } = null;
 
     protected override bool IsInstalled
     {
         get
         {
             string executablePath1 =
-                Path.Combine(CurrentGameInstallPath ?? string.Empty, CurrentGameExecutableByPreset);
-            string executablePath2 = Path.Combine(CurrentGameInstallPath ?? string.Empty, "EM/Binaries/Win64/EM-Win64-Shipping.exe");
-            string executablePath3 = Path.Combine(CurrentGameInstallPath ?? string.Empty, "EM.exe");
+                Path.Combine(CurrentGameInstallPath ?? string.Empty, "DNA Game", CurrentGameExecutableByPreset);
+            string executablePath2 = Path.Combine(CurrentGameInstallPath ?? string.Empty, "DNA Game\\EM\\Binaries\\Win64\\EM-Win64-Shipping.exe");
+            string executablePath3 = Path.Combine(CurrentGameInstallPath ?? string.Empty, "DNA Game\\EM.exe");
             return File.Exists(executablePath1) && File.Exists(executablePath2) && File.Exists(executablePath3);
         }
     }
@@ -110,32 +108,25 @@ internal partial class DNAGameManager : GameManagerBase
         return InitAsyncInner(true, token);
     }
 
-    private DNAApiResponseVersion? ApiVersion;
-    private DNAFilesVersion? InstalledVersion;
-
     internal async Task<int> InitAsyncInner(bool forceInit = false, CancellationToken token = default)
     {
         if (!forceInit && IsInitialized)
             return 0;
 
-        var apiUrl = $"{ApiResponseDetails.BaseUrl}/Packages/{ApiResponseDetails.Region}/WindowsNoEditor/{ApiResponseDetails.Tag}/PackageBaseVersion.txt";
+        using HttpResponseMessage manifestResponse =
+            await ApiResponseHttpClient.GetAsync(ApiDetails.GetVersionManifestUrl(), HttpCompletionOption.ResponseHeadersRead, token);
+        manifestResponse.EnsureSuccessStatusCode();
 
-        using HttpResponseMessage packageVersionResponse =
-            await ApiResponseHttpClient.GetAsync(apiUrl, HttpCompletionOption.ResponseHeadersRead, token);
-        packageVersionResponse.EnsureSuccessStatusCode();
+        string jsonResponse = await manifestResponse.Content.ReadAsStringAsync(token);
+        VersionManifest = JsonSerializer.Deserialize(jsonResponse, DNAApiResponseContext.Default.DNAApiResponseVersionManifest);
 
-        ApiResponseVersion = await packageVersionResponse.Content.ReadAsStringAsync(token);
-        ApiGameVersion = new GameVersion($"{ApiResponseVersion}.0.0");
-
-        var apiVersionUrl = $"{ApiResponseDetails.BaseUrl}/Packages/{ApiResponseDetails.Region}/WindowsNoEditor/{ApiResponseDetails.Tag}/{ApiResponseVersion}/BaseVersion.json";
-
-        using HttpResponseMessage versionResponse =
-            await ApiResponseHttpClient.GetAsync(apiVersionUrl, HttpCompletionOption.ResponseHeadersRead, token);
-        versionResponse.EnsureSuccessStatusCode();
-
-        string jsonResponse = await versionResponse.Content.ReadAsStringAsync(token);
-        ApiVersion = JsonSerializer.Deserialize(jsonResponse, DNAApiResponseContext.Default.DNAApiResponseVersion);
-        ApiGameVersion = new GameVersion(ApiVersion?.GameVersionList.First().Key);
+        ApiGameVersion = new GameVersion($"{VersionManifest?.LatestVersion}.0.0");
+#if DEBUG
+        SharedStatic.InstanceLogger.LogTrace("[DNAGameManager::InitAsyncInner] Current Game Version is {Version} ({FormattedVersion})",
+            VersionManifest?.LatestVersion, VersionManifest?.LatestVersionNumber);
+        SharedStatic.InstanceLogger.LogTrace("[DNAGameManager::InitAsyncInner] Game can be updated from any version over {MinVersion}",
+            VersionManifest?.MinSupportedVersion);
+#endif
 
         IsInitialized = true;
 
@@ -178,7 +169,7 @@ internal partial class DNAGameManager : GameManagerBase
 #if DEBUG
                 SharedStatic.InstanceLogger.LogTrace("[DNAGameManager::FindExistingInstallPathAsyncInner] Found game executable at {Path}", expectedExe);
 #endif
-                return Path.GetDirectoryName(expectedExe);
+                return launcherDir;
             }
 
             return null;
@@ -189,46 +180,39 @@ internal partial class DNAGameManager : GameManagerBase
     {
         if (string.IsNullOrEmpty(CurrentGameInstallPath))
         {
-            SharedStatic.InstanceLogger.LogWarning(
-                "[DNAGameManager::LoadConfig] Game directory isn't set! Game config won't be loaded.");
+            SharedStatic.InstanceLogger.LogWarning("[DNAGameManager::LoadConfig] Game directory isn't set! Game config won't be loaded.");
             return;
         }
 
-        string filePath = Path.Combine(CurrentGameInstallPath, "BaseVersion.json");
+        var gameFolder = Path.Combine(CurrentGameInstallPath, "DNA Game");
+        var filePath = Path.Combine(gameFolder, "GameVersion.json");
         FileInfo fileInfo = new(filePath);
 
         if (!fileInfo.Exists)
         {
-            SharedStatic.InstanceLogger.LogWarning(
-                "[DNAGameManager::LoadConfig] File BaseVersion.json doesn't exist on dir: {Dir}",
-                CurrentGameInstallPath);
+            SharedStatic.InstanceLogger.LogWarning("[DNAGameManager::LoadConfig] File GameVersion.json doesn't exist on dir: {Dir}",
+                gameFolder);
             return;
         }
 
         try
         {
             using FileStream fileStream = fileInfo.OpenRead();
-            InstalledVersion = JsonSerializer.Deserialize(fileStream, DNAFilesContext.Default.DNAFilesVersion);
-            CurrentGameVersion = new GameVersion(InstalledVersion?.GameVersionList.First().Key);
+            GameVersion = JsonSerializer.Deserialize(fileStream, DNAFilesContext.Default.DNAFilesGameVersion);
 
-            SharedStatic.InstanceLogger.LogTrace(
-                "[DNAGameManager::LoadConfig] Loaded BaseVersion.json from directory: {Dir}",
-                CurrentGameInstallPath);
+            CurrentGameVersion = new GameVersion($"{GameVersion?.Version}.0.0");
+
+            SharedStatic.InstanceLogger.LogTrace("[DNAGameManager::LoadConfig] Loaded GameVersion.json ({Version}) from directory: {Dir}",
+                GameVersion?.Version, gameFolder);
         }
         catch (Exception ex)
         {
-            SharedStatic.InstanceLogger.LogError(
-                "[DNAGameManager::LoadConfig] Cannot load BaseVersion.json! Reason: {Exception}", ex);
+            SharedStatic.InstanceLogger.LogError("[DNAGameManager::LoadConfig] Cannot load GameVersion.json! Reason: {Exception}", ex);
         }
     }
 
     public override void SaveConfig()
     {
         // NOP
-    }
-
-    internal void SetCurrentGameVersion(DNAFilesVersion? version)
-    {
-        InstalledVersion = version;
     }
 }

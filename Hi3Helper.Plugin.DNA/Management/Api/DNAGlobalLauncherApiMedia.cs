@@ -1,11 +1,15 @@
 ﻿using Hi3Helper.Plugin.Core;
 using Hi3Helper.Plugin.Core.Management.Api;
 using Hi3Helper.Plugin.Core.Utility;
+using Hi3Helper.Plugin.DNA.Management.PresetConfig;
 using Hi3Helper.Plugin.DNA.Utility;
+using Microsoft.Extensions.Logging;
+using System;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net.Http;
 using System.Runtime.InteropServices.Marshalling;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -14,7 +18,7 @@ using System.Threading.Tasks;
 namespace Hi3Helper.Plugin.DNA.Management.Api;
 
 [GeneratedComClass]
-internal partial class DNAGlobalLauncherApiMedia(DNAApiResponseDetails apiResponseDetails, string logoUrl, string backgroundUrl) : LauncherApiMediaBase
+internal partial class DNAGlobalLauncherApiMedia(DNAPresetConfig presetConfig) : LauncherApiMediaBase
 {
     [field: AllowNull, MaybeNull]
     protected override HttpClient ApiResponseHttpClient
@@ -30,10 +34,10 @@ internal partial class DNAGlobalLauncherApiMedia(DNAApiResponseDetails apiRespon
         set;
     }
 
-    protected override string ApiResponseBaseUrl { get; } = apiResponseDetails.BaseUrl;
+    private DNAApiDetails ApiDetails { get; } = presetConfig.ApiResponseDetails;
 
-    protected string LogoUrl { get; } = logoUrl;
-    protected string BackgroundUrl { get; } = backgroundUrl;
+    protected string LogoUrl { get; } = presetConfig.ApiResponseDetails.GetOverlayUrl();
+    protected string BackgroundUrl { get; private set; } = presetConfig.DefaultBackgroundUrl;
 
     public override unsafe void GetBackgroundEntries(out nint handle, out int count, out bool isDisposable, out bool isAllocated)
     {
@@ -46,14 +50,16 @@ internal partial class DNAGlobalLauncherApiMedia(DNAApiResponseDetails apiRespon
             return;
         }
 
+        SharedStatic.InstanceLogger.LogTrace("[DNAGlobalLauncherApiMedia::GetBackgroundEntries] Background Url is {Url}", BackgroundUrl);
+
         using (ThisInstanceLock.EnterScope())
         {
-            PluginDisposableMemory<LauncherPathEntry> backgroundEntries = PluginDisposableMemory<LauncherPathEntry>.Alloc();
+            PluginDisposableMemory<LauncherPathEntry> backgroundEntries = PluginDisposableMemory<LauncherPathEntry>.Alloc(1);
 
             try
             {
                 ref LauncherPathEntry entry = ref backgroundEntries[0];
-                entry.Write(BackgroundUrl, []);
+                entry.Write(BackgroundUrl, []);      
 
                 isAllocated = true;
             }
@@ -68,7 +74,13 @@ internal partial class DNAGlobalLauncherApiMedia(DNAApiResponseDetails apiRespon
 
     public override void GetLogoOverlayEntries(out nint handle, out int count, out bool isDisposable, out bool isAllocated)
     {
-        if (LogoUrl == null)
+        isDisposable = false;
+        handle = nint.Zero;
+        count = 0;
+        isAllocated = false;
+        return;
+
+        /*if (LogoUrl == null)
         {
             isDisposable = false;
             handle = nint.Zero;
@@ -77,34 +89,59 @@ internal partial class DNAGlobalLauncherApiMedia(DNAApiResponseDetails apiRespon
             return;
         }
 
+        SharedStatic.InstanceLogger.LogTrace("[DNAGlobalLauncherApiMedia::GetLogoOverlayEntries] Logo Overlay Url is {Url}", LogoUrl);
+
         using (ThisInstanceLock.EnterScope())
         {
-            PluginDisposableMemory<LauncherPathEntry> logoEntries = PluginDisposableMemory<LauncherPathEntry>.Alloc();
+            PluginDisposableMemory<LauncherPathEntry> backgroundEntries = PluginDisposableMemory<LauncherPathEntry>.Alloc(1);
 
             try
             {
-                ref LauncherPathEntry entry = ref logoEntries[0];
+                ref LauncherPathEntry entry = ref backgroundEntries[0];
                 entry.Write(LogoUrl, []);
 
                 isAllocated = true;
             }
             finally
             {
-                isDisposable = logoEntries.IsDisposable == 1;
-                handle = logoEntries.AsSafePointer();
-                count = logoEntries.Length;
+                isDisposable = backgroundEntries.IsDisposable == 1;
+                handle = backgroundEntries.AsSafePointer();
+                count = backgroundEntries.Length;
             }
-        }
+        }*/
     }
 
     public override void GetBackgroundFlag(out LauncherBackgroundFlag result)
-        => result = LauncherBackgroundFlag.TypeIsVideo | LauncherBackgroundFlag.IsSourceFile;
+        => result = LauncherBackgroundFlag.TypeIsImage | LauncherBackgroundFlag.IsSourceFile;
 
     public override void GetLogoFlag(out LauncherBackgroundFlag result)
-        => result = LauncherBackgroundFlag.TypeIsImage | LauncherBackgroundFlag.IsSourceFile;
+        => result = LauncherBackgroundFlag.None /* LauncherBackgroundFlag.TypeIsImage | LauncherBackgroundFlag.IsSourceFile */;
 
     protected override async Task<int> InitAsync(CancellationToken token)
     {
+        try
+        {
+            var manifestUrl = ApiDetails.GetVersionManifestUrl();
+            SharedStatic.InstanceLogger.LogTrace("[DNAGlobalLauncherApiMedia::InitAsync] Manifest Url is {Url}", manifestUrl);
+
+            using HttpResponseMessage manifestResponse =
+                await ApiResponseHttpClient.GetAsync(manifestUrl, HttpCompletionOption.ResponseHeadersRead, token);
+            manifestResponse.EnsureSuccessStatusCode();
+
+            string jsonResponse = await manifestResponse.Content.ReadAsStringAsync(token);
+
+            var apiResponse = JsonSerializer.Deserialize(jsonResponse, DNAApiResponseContext.Default.DNAApiResponseVersionManifest);
+
+            BackgroundUrl = DNAApiDetails.GetBackgroundUrl(apiResponse!.LatestVersionNumber!);
+
+            SharedStatic.InstanceLogger.LogTrace("[DNAGlobalLauncherApiMedia::InitAsync] Background Url is {Url}", BackgroundUrl);
+        }
+        catch (Exception ex)
+        {
+            SharedStatic.InstanceLogger.LogTrace("[DNAGlobalLauncherApiMedia::InitAsync] Failed to obtain Background Url. Ex: {Message}", ex.Message);
+            return -1;
+        }
+
         return 0;
     }
 

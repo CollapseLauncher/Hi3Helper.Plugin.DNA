@@ -16,11 +16,10 @@ namespace Hi3Helper.Plugin.DNA.Management.PresetConfig;
 [GeneratedComClass]
 public partial class DNAChinaPresetConfig : DNAPresetConfig
 {
-    private readonly DNAApiResponseDetails ApiResponseDetails = new()
+    public override DNAApiDetails ApiResponseDetails { get; } = new()
     {
         BaseUrls = [
             "http://pan01-cdn-dna-ali.shyxhy.com",
-            "http://pan01-cdn-dna-aws.shyxhy.com",
             "http://pan01-1-eo.shyxhy.com",
             "http://pan01-1-hs.shyxhy.com"
         ],
@@ -38,10 +37,10 @@ public partial class DNAChinaPresetConfig : DNAPresetConfig
     public override string GameName => "Duet Night Abyss";
 
     [field: AllowNull, MaybeNull]
-    public override string GameExecutableName => field ??= Path.Combine("EM", "Binaries", "Win64", EngineExecutableName);
+    public override string GameExecutableName => field ??= Path.Combine("DNA Game", "EM", "Binaries", "Win64", EngineExecutableName);
     
     [field: AllowNull, MaybeNull]
-    public override string StartExecutableName => field ??= ExecutableName;
+    public override string StartExecutableName => field ??= Path.Combine("DNA Game", ExecutableName);
 
     public override string GameAppDataPath { 
         get
@@ -97,25 +96,25 @@ public partial class DNAChinaPresetConfig : DNAPresetConfig
 
     public override ILauncherApiMedia? LauncherApiMedia
     {
-        get => field ??= new DNAGlobalLauncherApiMedia(ApiResponseDetails, ZoneLogoUrl, BackgroundUrl);
+        get => field ??= new DNAGlobalLauncherApiMedia(this);
         set;
     }
 
     public override ILauncherApiNews? LauncherApiNews
     {
-        get => field ??= new DNAGlobalLauncherApiNews(ApiResponseDetails, "CN");
+        get => field ??= new DNAGlobalLauncherApiNews(this, "CN");
         set;
     }
 
     public override IGameManager? GameManager
     {
-        get => field ??= new DNAGameManager(ExecutableName, ApiResponseDetails, this);
+        get => field ??= new DNAGameManager(ExecutableName, this);
         set;
     }
 
     public override IGameInstaller? GameInstaller
     {
-        get => field ??= new DNAGameInstaller(GameManager, ApiResponseDetails);
+        get => field ??= new DNAGameInstaller(GameManager);
         set;
     }
 

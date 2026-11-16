@@ -87,6 +87,8 @@ dotnet restore --runtime win-x64 ..\Hi3Helper.Plugin.DNA.sln || goto :Error
 dotnet clean --configuration %configuration% --runtime win-x64 ..\Hi3Helper.Plugin.DNA.sln || goto :Error
 dotnet publish --configuration %configuration% --runtime win-x64 /p:PublishProfile=%publishProfile% -o "%outputDirPath%" || goto :Error
 
+xcopy "..\Lib" "%outputDirPath%\Lib" /E /I /Y /Q || goto :Error
+
 :RemovePDBIfNotDebug
 if "%_isRemoveSymbol%" == "true" (
   del "%outputDirPath%\*.pdb" || goto :Error

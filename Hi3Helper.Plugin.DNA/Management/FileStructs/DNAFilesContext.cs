@@ -2,5 +2,6 @@
 
 namespace Hi3Helper.Plugin.DNA.Management.FileStructs;
 
-[JsonSerializable(typeof(DNAFilesVersion))]
+[JsonSerializable(typeof(DNAFilesGameVersion))]
+[JsonSerializable(typeof(DNAFilesDownloadVersion))]
 public partial class DNAFilesContext : JsonSerializerContext;

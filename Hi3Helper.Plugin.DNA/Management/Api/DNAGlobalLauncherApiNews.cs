@@ -11,6 +11,7 @@ using System.Runtime.InteropServices.Marshalling;
 using System.Threading;
 using System.Threading.Tasks;
 using Hi3Helper.Plugin.Core.Management;
+using Hi3Helper.Plugin.DNA.Management.PresetConfig;
 
 // ReSharper disable InconsistentNaming
 
@@ -23,7 +24,7 @@ using System.Text.Json;
 namespace Hi3Helper.Plugin.DNA.Management.Api;
 
 [GeneratedComClass]
-internal partial class DNAGlobalLauncherApiNews(DNAApiResponseDetails apiResponseDetails, string? forceLang = null) : LauncherApiNewsBase
+internal partial class DNAGlobalLauncherApiNews(DNAPresetConfig presetConfig, string? forceLang = null) : LauncherApiNewsBase
 {
     [field: AllowNull, MaybeNull]
     protected override HttpClient ApiResponseHttpClient
@@ -39,8 +40,7 @@ internal partial class DNAGlobalLauncherApiNews(DNAApiResponseDetails apiRespons
         set;
     }
 
-    protected override string ApiResponseBaseUrl { get; } = apiResponseDetails.BaseUrl;
-    protected DNAApiResponseDetails ApiResponseDetails { get; } = apiResponseDetails;
+    protected DNAApiDetails ApiResponseDetails { get; } = presetConfig.ApiResponseDetails;
 
     private DNAApiResponseNotices? NoticesApiResponse { get; set; }
 
@@ -50,24 +50,22 @@ internal partial class DNAGlobalLauncherApiNews(DNAApiResponseDetails apiRespons
 
     private string LangCode => forceLang ?? DNAUtility.GetApiLangFromLauncherLocale();
 
+
     protected override async Task<int> InitAsync(CancellationToken token)
     {
-        using HttpResponseMessage notices = await ApiResponseHttpClient
-            .GetAsync($"{ApiResponseBaseUrl}/OperationLauncherNotice/OperationLauncherNoticeProduction{ApiResponseDetails.RegionLong}online.json", HttpCompletionOption.ResponseHeadersRead, token);
+        using HttpResponseMessage notices = await ApiResponseHttpClient.GetAsync(ApiResponseDetails.GetNoticesUrl(), HttpCompletionOption.ResponseHeadersRead, token);
         notices.EnsureSuccessStatusCode();
 
         string noticesJsonResponse = await notices.Content.ReadAsStringAsync(token);
         NoticesApiResponse = JsonSerializer.Deserialize(noticesJsonResponse, DNAApiResponseContext.Default.DNAApiResponseNotices);
 
-        using HttpResponseMessage carousel = await ApiResponseHttpClient
-            .GetAsync($"{ApiResponseBaseUrl}/OperationLauncherHeadImage/OperationLauncherHeadImageProduction{ApiResponseDetails.RegionLong}online.json", HttpCompletionOption.ResponseHeadersRead, token);
+        using HttpResponseMessage carousel = await ApiResponseHttpClient.GetAsync(ApiResponseDetails.GetCarouselUrl(), HttpCompletionOption.ResponseHeadersRead, token);
         carousel.EnsureSuccessStatusCode();
 
         string carouselJsonResponse = await carousel.Content.ReadAsStringAsync(token);
         CarouselApiResponse = JsonSerializer.Deserialize(carouselJsonResponse, DNAApiResponseContext.Default.DNAApiResponseCarousel);
 
-        using HttpResponseMessage socials = await ApiResponseHttpClient
-            .GetAsync($"{ApiResponseBaseUrl}/OperationLauncherSocialMedia/OperationLauncherSocialMediaProduction{ApiResponseDetails.RegionLong}online.json", HttpCompletionOption.ResponseHeadersRead, token);
+        using HttpResponseMessage socials = await ApiResponseHttpClient.GetAsync(ApiResponseDetails.GetSocialsUrl(), HttpCompletionOption.ResponseHeadersRead, token);
         socials.EnsureSuccessStatusCode();
 
         string socialsJsonResponse = await socials.Content.ReadAsStringAsync(token);

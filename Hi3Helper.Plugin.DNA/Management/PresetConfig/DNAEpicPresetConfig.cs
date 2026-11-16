@@ -11,7 +11,7 @@ namespace Hi3Helper.Plugin.DNA.Management.PresetConfig;
 [GeneratedComClass]
 public partial class DNAEpicPresetConfig : DNAGlobalPresetConfig
 {
-    private readonly DNAApiResponseDetails ApiResponseDetails = new()
+    public override DNAApiDetails ApiResponseDetails { get; } = new()
     {
         BaseUrls = [
             "http://pan01-cdn-aws-jp.dna-panstudio.com",
@@ -38,13 +38,13 @@ public partial class DNAEpicPresetConfig : DNAGlobalPresetConfig
 
     public override IGameManager? GameManager
     {
-        get => field ??= new DNAGameManager(ExecutableName, ApiResponseDetails, this);
+        get => field ??= new DNAGameManager(ExecutableName, this);
         set;
     }
 
     public override IGameInstaller? GameInstaller
     {
-        get => field ??= new DNAGameInstaller(GameManager, ApiResponseDetails);
+        get => field ??= new DNAGameInstaller(GameManager);
         set;
     }
 }

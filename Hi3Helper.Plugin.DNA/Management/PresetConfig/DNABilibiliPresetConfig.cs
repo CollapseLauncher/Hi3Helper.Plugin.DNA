@@ -11,11 +11,10 @@ namespace Hi3Helper.Plugin.DNA.Management.PresetConfig;
 [GeneratedComClass]
 public partial class DNABiliBilliPresetConfig : DNAChinaPresetConfig
 {
-    private readonly DNAApiResponseDetails ApiResponseDetails = new()
+    public override DNAApiDetails ApiResponseDetails { get; } = new()
     {
         BaseUrls = [
             "http://pan01-cdn-dna-ali.shyxhy.com",
-            "http://pan01-cdn-dna-aws.shyxhy.com",
             "http://pan01-1-eo.shyxhy.com",
             "http://pan01-1-hs.shyxhy.com"
         ],
@@ -41,13 +40,13 @@ public partial class DNABiliBilliPresetConfig : DNAChinaPresetConfig
 
     public override IGameManager? GameManager
     {
-        get => field ??= new DNAGameManager(ExecutableName, ApiResponseDetails, this);
+        get => field ??= new DNAGameManager(ExecutableName, this);
         set;
     }
 
     public override IGameInstaller? GameInstaller
     {
-        get => field ??= new DNAGameInstaller(GameManager, ApiResponseDetails);
+        get => field ??= new DNAGameInstaller(GameManager);
         set;
     }
 }
