@@ -114,7 +114,7 @@ public partial class DNAChinaPresetConfig : DNAPresetConfig
 
     public override IGameInstaller? GameInstaller
     {
-        get => field ??= new DNAGameInstaller(GameManager, ApiResponseDetails);
+        get => field ??= new DNAGameInstaller(GameManager);
         set;
     }
 

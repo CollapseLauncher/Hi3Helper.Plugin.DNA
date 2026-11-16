@@ -8,7 +8,6 @@ using SharpHPatchZ;
 using SharpHPatchZ.Header;
 using System;
 using System.IO;
-using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading;
@@ -42,9 +41,6 @@ internal partial class DNAGameInstaller : GameInstallerBase
 
         var tempPath = Path.Combine(_gamePath!, _tempPath);
         Directory.CreateDirectory(tempPath);
-
-        var tempJsonPath = Path.Combine(tempPath, _downloadVersionName);
-        await WriteDownloadVersionJson(tempJsonPath);
 
         var fileSize = HdiffInfo.HdiffFile.Size!.Value;
         var hdiffName = HdiffInfo.HdiffFile.Name!;
@@ -101,13 +97,20 @@ internal partial class DNAGameInstaller : GameInstallerBase
         await PatchFiles();
 
         // 5. File Cleanup
-        await CleanupFiles(true);
+        if (!_canSkipDelete)
+        {
+            var fileInfo = new FileInfo(hdiffPath);
+            if (fileInfo.Exists)
+            {
+                fileInfo.Delete();
+            }
 
-        // 6. Finalize installation - Write BaseVersion.json
+            Directory.Delete(tempPath, true);
+        }
+
+        // 6. Finalize installation - Write GameVersion.json
         var mainJsonPath = Path.Combine(_gamePath!, _gameVersionName);
         await WriteGameVersionJson(mainJsonPath);
-
-        Directory.Delete(tempPath, true);
 
         _gameManager!.GetApiGameVersion(out GameVersion apiVersion);
         _gameManager!.SetCurrentGameVersion(apiVersion);
@@ -168,7 +171,7 @@ internal partial class DNAGameInstaller : GameInstallerBase
                     new RetryableCopyToStreamTaskOptions
                     {
                         IsDisposeTargetStream = true,
-                        MaxBufferSize = 8 << 10,
+                        MaxBufferSize = 128 << 10,
                         RetryDelaySeconds = 1d
                     });
 
@@ -258,46 +261,6 @@ internal partial class DNAGameInstaller : GameInstallerBase
             }
         }
         #endregion
-
-        #region Subroutine - File Cleanup
-        async Task CleanupFiles(bool deleteDownloadVersion = false)
-        {
-            if (File.Exists(hdiffPath))
-            {
-                File.Delete(hdiffPath);
-            }
-
-            if (deleteDownloadVersion)
-            {
-                File.Delete(tempJsonPath);
-            }
-        }
-        #endregion
-    }
-
-    private async Task WriteDownloadVersionJson(string jsonPath)
-    {
-        if (HdiffInfo?.HdiffFile == null)
-            return;
-
-        FileInfo fileInfo = new FileInfo(jsonPath);
-        fileInfo.Directory?.Create();
-
-        using var output = fileInfo.Open(FileMode.Create, FileAccess.Write, FileShare.None);
-
-        var fileVersion = _gameManager?.ApiDetails.GetHdiffFileName(
-            _gameManager.VersionManifest!.LatestVersionNumber!,
-            _gameManager.VersionManifest!.LatestVersion!,
-            _gameVersion);
-            
-        var downloadVersion = new DNAFilesDownloadVersion()
-        {
-            Version = fileVersion,
-            MD5 = HdiffInfo.HdiffFile.MD5,
-            IsFullPatch = _gameVersion != null
-        };
-
-        await JsonSerializer.SerializeAsync(output, downloadVersion, DNAFilesContext.Default.DNAFilesDownloadVersion);
     }
 
     private async Task WriteGameVersionJson(string jsonPath)

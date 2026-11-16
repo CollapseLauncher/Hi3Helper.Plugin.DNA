@@ -1,7 +1,6 @@
 ﻿using Hi3Helper.Plugin.Core;
 using Hi3Helper.Plugin.Core.Management;
 using Hi3Helper.Plugin.DNA.Management.Api;
-using Hi3Helper.Plugin.DNA.Management.FileStructs;
 using Hi3Helper.Plugin.DNA.Utility;
 using Microsoft.Extensions.Logging;
 using System;
@@ -22,17 +21,14 @@ internal partial class DNAGameInstaller : GameInstallerBase
 
     private string? _gamePath = null;
     private string? _gameVersion = null;
-    private const long _blockSize = 1024 << 10;
 
-    private const string _tempPath = "TempPath\\TempGameFiles";
-    private const string _downloadVersionName = "DownloadVersion.json";
-    private DNAFilesDownloadVersion? DownloadVersion = null;
+    private const string _tempPath = "TempPath";
 
     private DNAApiResponseHdiffInfo? HdiffInfo = null;
 
     private const string _gameVersionName = "GameVersion.json";
 
-    public DNAGameInstaller(IGameManager? gameManager, DNAApiDetails apiResponseDetails) : base(gameManager)
+    public DNAGameInstaller(IGameManager? gameManager) : base(gameManager)
     {
         _gameManager = gameManager as DNAGameManager;
     }
@@ -40,23 +36,6 @@ internal partial class DNAGameInstaller : GameInstallerBase
     protected override async Task<int> InitAsync(CancellationToken token)
     {
         GameManager.GetGamePath(out _gamePath);
-
-        // Attempt to parse existing installation process
-        try
-        {
-            var dlVerPath = Path.Combine(_gamePath!, _tempPath, _downloadVersionName);
-            if (Path.Exists(dlVerPath))
-            {
-                using var dlVerResponse = File.OpenRead(dlVerPath);
-                DownloadVersion = JsonSerializer.Deserialize(dlVerResponse, DNAFilesContext.Default.DNAFilesDownloadVersion);
-                SharedStatic.InstanceLogger.LogDebug("[DNAGameInstaller::InitAsync] Deserialized DownloadVersion.json");
-            }
-        }
-        catch (Exception ex)
-        {
-            SharedStatic.InstanceLogger.LogWarning("[DNAGameInstaller::InitAsync] Failed to deserialize DownloadVersion: {Err}", ex.Message);
-            DownloadVersion = null;
-        }
 
         _gameVersion = _gameManager!.GameVersion?.Version;
         if (_gameVersion != null)
