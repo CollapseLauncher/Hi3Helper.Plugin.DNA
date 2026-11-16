@@ -37,7 +37,7 @@ internal partial class DNAGameInstaller : GameInstallerBase
     {
         GameManager.GetGamePath(out _gamePath);
 
-        _gameVersion = _gameManager!.GameVersion?.Version;
+        _gameVersion = _gameManager!.GameVersion?.Version.ToString();
         if (_gameVersion != null)
         {
             long gameVer = long.Parse(_gameVersion);
