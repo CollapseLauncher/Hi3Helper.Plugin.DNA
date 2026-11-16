@@ -15,7 +15,6 @@ public partial class DNABiliBilliPresetConfig : DNAChinaPresetConfig
     {
         BaseUrls = [
             "http://pan01-cdn-dna-ali.shyxhy.com",
-            "http://pan01-cdn-dna-aws.shyxhy.com",
             "http://pan01-1-eo.shyxhy.com",
             "http://pan01-1-hs.shyxhy.com"
         ],
